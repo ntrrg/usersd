@@ -1,0 +1,11 @@
+*.sublime*
+*.swp
+Session.vim
+nogit-*
+.DS_Store
+coverage.txt
+.screenrc
+.make/bin
+internal/api/test-db
+dist/
+
