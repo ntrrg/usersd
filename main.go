@@ -11,60 +11,60 @@ import (
 
 	nthttp "github.com/ntrrg/ntgo/net/http"
 
-	"github.com/ntrrg/usersd/internal/rest"
+	"github.com/ntrrg/usersd/api/rest"
 	"github.com/ntrrg/usersd/pkg/usersd"
 )
 
-var lf *os.File
-
 func main() {
-	defer lf.Close()
-	defer usersd.Close()
-
-	err := rest.Server.ListenAndServe()
-
-	if err != http.ErrServerClosed {
-		log.Fatalf("[ERROR][SERVER] Can't start the server. (%v)\n", err)
-	}
-
-	<-rest.Server.Done
-}
-
-func init() {
 	var (
-		cfg   nthttp.Config
-		debug bool
+		usersdOpts = usersd.DefaultOptions
 
-		dir, logfile string
+		restOpts nthttp.Config
+
+		verbose bool
+		debug   bool
+		logfile string
 	)
 
 	flag.StringVar(
-		&cfg.Addr,
+		&restOpts.Addr,
 		"addr",
 		":4000",
 		"TCP address to listen on. If a path to a file is given, the server will "+
 			"use a Unix Domain Socket.",
 	)
 
-	flag.StringVar(&dir, "db", "", "Database location")
+	flag.StringVar(&usersdOpts.Database, "db", "", "Database location")
+	flag.BoolVar(&verbose, "verbose", true, "Enable debugging")
 	flag.BoolVar(&debug, "debug", false, "Enable debugging")
 	flag.StringVar(&logfile, "log", "", "Log file location (default: stderr)")
 	flag.Parse()
 
+	usersdOpts.Verbose = verbose
+	usersdOpts.Debug = debug
+
 	if logfile != "" {
-		var err error
-		lf, err = os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		lf, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 
 		if err != nil {
 			log.Fatalf("[ERROR][SERVER] Can't create/open the log file. (%v)\n", err)
 		}
 
+		defer lf.Close()
 		log.SetOutput(lf)
+		usersdOpts.Logger = log.New(lf, "", log.LstdFlags)
 	}
 
-	rest.Server.Setup(cfg)
-
-	if err := usersd.Init(dir); err != nil {
+	if err := usersd.Init(usersdOpts); err != nil {
 		log.Fatalf("[ERROR][API] Can't initialize the API. (%v)\n", err)
 	}
+
+	defer usersd.Close()
+	rest.Server.Setup(restOpts)
+
+	if err := rest.Server.ListenAndServe(); err != http.ErrServerClosed {
+		log.Fatalf("[ERROR][SERVER] Can't start the server. (%v)\n", err)
+	}
+
+	<-rest.Server.Done
 }

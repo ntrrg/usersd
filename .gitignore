@@ -5,7 +5,7 @@ nogit-*
 .DS_Store
 coverage.txt
 .screenrc
-.make/bin
-internal/api/test-db
+pkg/usersd/test-db
 dist/
+*~
 

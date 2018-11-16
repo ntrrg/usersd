@@ -7,59 +7,77 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
-	"log"
+	"os"
 
 	"github.com/blevesearch/bleve"
 	"github.com/dgraph-io/badger"
 )
 
-var (
-	db    *badger.DB
-	index bleve.Index
-)
-
 // Backup writes a database backup to the given io.Writer.
 func Backup(w io.Writer) error {
-	_, err := db.Backup(w, 0)
+	if _, err := db.Backup(w, 0); err != nil {
+		l.Printf(lError+" Can't create the database backup -> %v", err)
+		return err
+	}
+
+	l.Print(lInfo + " Backup created")
+	return nil
+}
+
+// Restore reads a database backup from the given io.Reader.
+func Restore(r io.Reader) error {
+	err := db.Load(r)
+
+	if err != nil {
+		l.Printf(lError+" Can't restore the database backup -> %v", err)
+	} else {
+		l.Print(lInfo + " Backup retored")
+	}
+
 	return err
 }
 
-// Close terminates with the database process.
-//
-// BUG(ntrrg): Since Close doesn't closes the index, testing Init with an
-// existing directory is not possible.
-func Close() {
-	db.Close()
-}
+// Reset loads default data to the database.
+func Reset() error {
+	l.Print(lInfo + " Truncating database..")
+	empty := bytes.NewBuffer(nil)
 
-// Get is a helper for doing a simple database read.
-func Get(key []byte) ([]byte, error) {
-	txn := db.NewTransaction(false)
-	defer txn.Discard()
-
-	item, err := txn.Get(key)
-
-	if err != nil {
-		return nil, err
+	if err := Restore(empty); err != nil {
+		return err
 	}
 
-	v, err := item.ValueCopy(nil)
-	return v, err
+	user, err := NewUser("", "admin", map[string]interface{}{"id": "admin"})
+
+	if err != nil {
+		l.Printf(lError+" Can't create the administrator user -> %v", err)
+		return err
+	}
+
+	if err := user.Save(); err != nil {
+		l.Printf(lError+" Can't create the administrator user -> %v", err)
+		return err
+	}
+
+	l.Print(lInfo + " Database truncated")
+	return nil
 }
 
-// Init opens/creates database and indexing directories. It receives a string
-// as argument, which is the path to store the data, if an empty string is
-// given, a temporary storage will be used.
-func Init(dir string) (err error) {
+// dbOpen opens/creates database and indexing directories. It receives a
+// string as argument, which is the path to store the data, if an empty string
+// is given, a temporary storage will be used.
+func dbOpen(dir string) (err error) {
 	if dir == "" {
-		if dir, err = ioutil.TempDir("", "backend"); err != nil {
+		if dir, err = ioutil.TempDir("", "usersd"); err != nil {
+			l.Printf(lFatal+" Can't create a temporary directory -> %v", err)
 			return err
 		}
 
-		log.Printf("[INFO][API] Using temporary database directory at %s", dir)
+		l.Print(lWarn + " Using a temporary database directory")
 	}
 
-	indexPath := dir + "/index"
+	l.Printf(lInfo+" Database directory: %s\n", dir)
+
+	indexPath := dir + "/search/users"
 	index, err = bleve.Open(indexPath)
 
 	if err == bleve.Error(1) { // ErrorIndexPathDoesNotExist
@@ -67,86 +85,49 @@ func Init(dir string) (err error) {
 		index, err = bleve.New(indexPath, mapping)
 
 		if err != nil {
+			l.Printf(lFatal+" Can't create the search index -> %v", err)
 			return err
 		}
 	} else if err != nil {
+		l.Printf(lFatal+" Can't open the search index -> %v", err)
 		return err
 	}
 
-	dbPath := dir + "/database"
+	if err := os.MkdirAll(dir+"/data", 0700); err != nil {
+		l.Printf(lFatal+" Can't create the data folder -> %v", err)
+		return err
+	}
+
+	dbPath := dir + "/data/users"
 	opts := badger.DefaultOptions
 	opts.Dir = dbPath
 	opts.ValueDir = dbPath
 
 	if db, err = badger.Open(opts); err != nil {
-		return err
-	}
-
-	if err := Reset(); err != nil {
-		db.Close()
+		l.Printf(lFatal+" Can't open/create the database -> %v", err)
 		return err
 	}
 
 	return nil
 }
 
-// Reset loads default data to the database.
-func Reset() error {
-	empty := bytes.NewBuffer(nil)
+// dbClose closes the database and the search index.
+func dbClose() error {
+	db.Close()
+	l.Print(lInfo + " Database closed")
 
-	if err := Restore(empty); err != nil {
+	_, kvs, err := index.Advanced()
+
+	if err != nil {
+		l.Printf(lError+" Can't get the search index database -> %v", err)
 		return err
 	}
 
-	users := []*User{
-		{
-			ID:        "18dd75e9-3d4a-48e2-bafc-3c8f95a8f0d1",
-			Name:      "John",
-			HighScore: 322,
-		},
-		{
-			ID:        "f9a9af78-6681-4d7d-8ae7-fc41e7a24d08",
-			Name:      "Bob",
-			HighScore: 21,
-		},
-		{
-			ID:        "2d18862b-b9c3-40f5-803e-5e100a520249",
-			Name:      "Alice",
-			HighScore: 99332,
-		},
+	if err := kvs.Close(); err != nil {
+		l.Printf(lError+" Can't close the search index database -> %v", err)
+		return err
 	}
 
-	for _, user := range users {
-		if err := user.Save(); err != nil {
-			log.Println(err)
-
-			if err := Restore(empty); err != nil {
-				return err
-			}
-
-			return err
-		}
-	}
-
+	l.Print(lInfo + " Search index closed")
 	return nil
-}
-
-// Restore reads a database backup from the given io.Reader.
-func Restore(r io.Reader) error {
-	return db.Load(r)
-}
-
-// Set is a helper for doing a simple database write.
-func Set(k, v []byte) error {
-	return db.Update(func(txn *badger.Txn) error {
-		if err := txn.Set(k, v); err != nil {
-			return err
-		}
-
-		if err := txn.Commit(nil); err != nil {
-			return err
-		}
-
-		return nil
-	})
 }

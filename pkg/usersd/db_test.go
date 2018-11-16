@@ -4,27 +4,21 @@
 package usersd_test
 
 import (
-	"fmt"
+	"bytes"
+	"testing"
 
 	"github.com/ntrrg/usersd/pkg/usersd"
 )
 
-func ExampleInit_newLocation() {
-	if err := usersd.Init("test-db"); err != nil {
-		fmt.Println(err)
+func TestBackup(t *testing.T) {
+	if err := usersd.Init(Opts); err != nil {
+		t.Fatal(err)
 	}
 
 	defer usersd.Close()
+	backup := bytes.NewBuffer(nil)
 
-	// Output:
-}
-
-func ExampleInit_temporaryStorage() {
-	if err := usersd.Init(""); err != nil {
-		fmt.Println(err)
+	if err := usersd.Backup(backup); err != nil {
+		t.Error(err)
 	}
-
-	defer usersd.Close()
-
-	// Output:
 }

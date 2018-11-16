@@ -1,4 +1,4 @@
 .git/
-coverage.txt
-.make/
+pkg/usersd/test-db
+dist/
 

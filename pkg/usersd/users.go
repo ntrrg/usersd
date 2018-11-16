@@ -4,87 +4,56 @@
 package usersd
 
 import (
-	"bytes"
 	"encoding/json"
+	"sync"
+	"time"
 
 	"github.com/dgraph-io/badger"
 	"github.com/gofrs/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
-// User represents a player.
+// User is an entity that may be authenticated and authorized.
+//
+// There are some special keys at User.Data field:
+//
+// * createdAt: Creation date.
+//
+// * lastLogin: Last login date.
 type User struct {
-	ID        string  `json:"id"`
-	Name      string  `json:"name"`
-	Games     uint64  `json:"gamesPlayed"`
-	HighScore uint64  `json:"highscore,omitempty"`
-	Friends   []*User `json:"friends,omitempty"`
+	ID   string                 `json:"id"`
+	Data map[string]interface{} `json:"data"`
 
-	Raw []byte `json:"-"`
+	password string
+	mu       sync.Mutex
 }
 
-// NewUser creates a user with the given name and populates some required data.
-func NewUser(name string) (*User, error) {
-	user := &User{Name: name}
-	id, err := uuid.NewV4()
+// NewUser creates a user with the given arguments and populates some required
+// data if missing.
+func NewUser(id, password string, data map[string]interface{}) (*User, error) {
+	if data == nil {
+		data = make(map[string]interface{})
+	}
 
-	if err != nil {
+	u := &User{
+		ID:   id,
+		Data: data,
+	}
+
+	if err := u.SetPassword(password); err != nil {
+		l.Printf(lError+" Can't create the password hash -> %v", err)
 		return nil, err
 	}
 
-	user.ID = id.String()
-
-	if err := user.Save(); err != nil {
-		return nil, err
+	if debug {
+		l.Printf(lDebug+" Temporary user created (%v) -> %+v", u.ID, u)
 	}
 
-	return user, nil
+	return u, nil
 }
 
-// NewUserFromJSON creates a user from the given JSON data and populates some
-// required data if missing.
-func NewUserFromJSON(data []byte) (*User, error) {
-	user := new(User)
-
-	if err := user.Load(data); err != nil {
-		return nil, err
-	}
-
-	if user.ID == "" {
-		id, err := uuid.NewV4()
-
-		if err != nil {
-			return nil, err
-		}
-
-		user.ID = id.String()
-	}
-
-	if err := user.Save(); err != nil {
-		return nil, err
-	}
-
-	return user, nil
-}
-
-// GetUser fetch a user with the given ID from the database.
-func GetUser(id string) (*User, error) {
-	data, err := Get([]byte(id))
-
-	if err != nil {
-		return nil, err
-	}
-
-	user := new(User)
-
-	if err := user.Load(data); err != nil {
-		return nil, err
-	}
-
-	return user, nil
-}
-
-// GetUsers fetch users that satisfies the given constraints from the database.
-func GetUsers() ([]*User, error) {
+// ListUsers fetches users that satisfies the given constraints.
+func ListUsers() ([]*User, error) {
 	txn := db.NewTransaction(false)
 	defer txn.Discard()
 
@@ -100,11 +69,13 @@ func GetUsers() ([]*User, error) {
 	for it.Rewind(); it.Valid(); it.Next() {
 		item := it.Item()
 
-		if _, err := item.ValueCopy(v); err != nil {
+		v, err := item.ValueCopy(v)
+
+		if err != nil {
 			return nil, err
 		}
 
-		user := &User{ID: string(item.Key())}
+		user := new(User)
 
 		if err := user.Load(v); err != nil {
 			return nil, err
@@ -116,57 +87,138 @@ func GetUsers() ([]*User, error) {
 	return users, nil
 }
 
-// Load fills an user with the given JSON data, but doesn't writes to the
-// database.
-func (u *User) Load(data []byte) error {
-	if bytes.Equal(data, u.Raw) {
-		return nil
+// GetUser fetches a user with the given ID.
+func GetUser(id string) (*User, error) {
+	txn := db.NewTransaction(false)
+	defer txn.Discard()
+
+	item, err := txn.Get([]byte(id))
+
+	if err != nil {
+		l.Printf(lError+" Can't find the given user (%s) -> %v", id, err)
+		return nil, err
 	}
 
+	data, err := item.ValueCopy(nil)
+
+	if err != nil {
+		l.Printf(lError+" Can't fetch the user data -> %v", err)
+		return nil, err
+	}
+
+	user := new(User)
+
+	if err := user.Load(data); err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+// Delete removes the user from the database.
+func (u *User) Delete() error {
+	txn := db.NewTransaction(true)
+	defer txn.Discard()
+
+	if err := txn.Delete([]byte(u.ID)); err != nil {
+		msg := lError + " Can't remove the user (%v) from the database -> %v"
+		l.Printf(msg, u.ID, err)
+		return err
+	}
+
+	if err := index.Delete(u.ID); err != nil {
+		msg := lError + " Can't remove the user (%v) from the search index -> %v"
+		l.Printf(msg, u.ID, err)
+		return err
+	}
+
+	if err := txn.Commit(nil); err != nil {
+		msg := lError + " Can't commit changes to the database -> %v"
+		l.Printf(msg, err)
+		return err
+	}
+
+	if debug {
+		l.Printf(lDebug+" User (%v) data removed", u.ID)
+	}
+
+	return nil
+}
+
+// Load fills a user with the given JSON data, but doesn't writes to the
+// database.
+func (u *User) Load(data []byte) error {
 	if err := json.Unmarshal(data, u); err != nil {
 		return err
 	}
 
-	u.Raw = data
 	return nil
 }
 
 // Save writes the user data to the database.
 func (u *User) Save() error {
-	if err := u.Validate(); err != nil {
-		return err
+	if u.ID == "" {
+		x, err := uuid.NewV4()
+
+		if err != nil {
+			return err
+		}
+
+		u.ID = x.String()
 	}
 
+	u.Set("createdAt", time.Now().Format("2006-01-02T15:04:05-0700"))
 	v, err := json.Marshal(u)
 
 	if err != nil {
+		l.Printf(lError+" Can't serialize the user (%v) -> %v", u.ID, err)
 		return err
-	}
-
-	if bytes.Equal(v, u.Raw) {
-		return nil
 	}
 
 	txn := db.NewTransaction(true)
 	defer txn.Discard()
 
 	if err := txn.Set([]byte(u.ID), v); err != nil {
+		msg := lError + " Can't write the user (%v) to the database -> %v"
+		l.Printf(msg, u.ID, err)
 		return err
 	}
 
-	if err := index.Index(u.ID, v); err != nil {
+	if err := index.Index(u.ID, u); err != nil {
+		msg := lError + " Can't add the user (%v) to the search index -> %v"
+		l.Printf(msg, u.ID, err)
 		return err
 	}
 
 	if err := txn.Commit(nil); err != nil {
+		msg := lError + " Can't commit chages to the database -> %v"
+		l.Printf(msg, err)
 		return err
 	}
 
-	u.Raw = v
+	if debug {
+		l.Printf(lDebug+" User (%v) data saved -> '%v'", u.ID, v)
+	}
+
 	return nil
 }
 
-// Validate checks for invalid data from a user.
-func (u *User) Validate() error {
+// Set sets the given value at the given key at Data field.
+func (u *User) Set(key string, value interface{}) {
+	u.mu.Lock()
+	u.Data[key] = value
+	u.mu.Unlock()
+}
+
+// SetPassword sets the user password from a string and returns an error if
+// any.
+func (u *User) SetPassword(password string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
+
+	if err != nil {
+		return err
+	}
+
+	u.password = string(hash)
 	return nil
 }

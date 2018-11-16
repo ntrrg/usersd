@@ -13,8 +13,12 @@
 
 [[constraint]]
   name = "github.com/gofrs/uuid"
-  version = "3.1.1"
+  version = "3.1.2"
 
 [[constraint]]
   name = "github.com/ntrrg/ntgo"
   branch = "master"
+
+[[constraint]]
+  name = "golang.org/x/crypto"
+  revision = "e3636079e1a4c1f337f212cc5cd2aca108f6c900"

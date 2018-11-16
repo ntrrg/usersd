@@ -12,7 +12,7 @@ import (
 )
 
 func Users(w http.ResponseWriter, r *http.Request) {
-	users, err := usersd.GetUsers()
+	users, err := usersd.ListUsers()
 
 	if err != nil {
 		log.Println(err)
