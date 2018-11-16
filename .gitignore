@@ -8,4 +8,5 @@ coverage.txt
 pkg/usersd/test-db
 dist/
 *~
+vendor/github.com/blevesearch/go-porterstemmer/porterstemmer_has_suffix.go
 
