@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/blevesearch/bleve"
 	"github.com/dgraph-io/badger"
@@ -32,8 +33,8 @@ var (
 
 // Options are parameters for initializing the API.
 type Options struct {
-	// Administrator user.
-	Admin *User
+	// Administrator user. Format: "ID[:PASSWORD]".
+	Admin string
 
 	// Database location.
 	Database string
@@ -49,6 +50,7 @@ type Options struct {
 
 // DefaultOptions are the commonly used options for a simple Init call.
 var DefaultOptions = Options{
+	Admin:           "admin:admin",
 	HashingStrength: 10,
 }
 
@@ -69,6 +71,27 @@ func Init(opts Options) (err error) {
 	}
 
 	bcryptCost = opts.HashingStrength
+
+	var username, password string
+	creds := strings.SplitN(opts.Admin, ":", 2)
+
+	if creds[0] == "" {
+		username, password = "admin", "admin"
+	} else if len(creds) == 1 {
+		username, password = creds[0], creds[0]
+	} else {
+		username, password = creds[0], creds[1]
+	}
+
+	admin, err = NewUser("admin", password, map[string]interface{}{
+		"username": username,
+		"name":     "Administrator",
+	})
+
+	if err != nil {
+		l.Printf(lError+" Can't create the administrator user -> %v", err)
+		return err
+	}
 
 	if err := dbOpen(opts.Database); err != nil {
 		return err

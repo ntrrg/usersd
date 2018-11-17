@@ -11,6 +11,16 @@ import (
 	"github.com/ntrrg/usersd/pkg/usersd"
 )
 
+type userData struct {
+	id, password string
+
+	data map[string]interface{}
+}
+
+type userCase struct {
+	in, want userData
+}
+
 func TestGetUser(t *testing.T) {
 	if err := usersd.Init(Opts); err != nil {
 		t.Fatal(err)
@@ -162,22 +172,12 @@ func TestUser_Delete(t *testing.T) {
 
 func usersFixtures() {
 	users := []userData{
-		{
-			id:       "admin",
-			password: "admin",
-			data: map[string]interface{}{
-				"id":    "admin",
-				"name":  "Administrator",
-				"email": "admin@domain.abc",
-			},
-		},
-
 		{password: "1234"},
 
 		{
 			data: map[string]interface{}{
-				"id":   "ntrrg",
-				"name": "Miguel Angel Rivera Notararigo",
+				"username": "ntrrg",
+				"name":     "Miguel Angel Rivera Notararigo",
 			},
 		},
 	}

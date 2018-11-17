@@ -197,7 +197,7 @@ func (u *User) Save() error {
 	}
 
 	if debug {
-		l.Printf(lDebug+" User (%v) data saved -> '%v'", u.ID, v)
+		l.Printf(lDebug+" User (%v) data saved -> '%v'", u.ID, string(v))
 	}
 
 	return nil

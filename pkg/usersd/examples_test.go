@@ -81,6 +81,9 @@ func ExampleInit_verbose() {
 
 	// Output:
 	// [INFO][USERSD] Database directory: test-db
+	// [INFO][USERSD] Truncating database..
+	// [INFO][USERSD] Backup retored
+	// [INFO][USERSD] Database truncated
 	// [INFO][USERSD] Database closed
 	// [INFO][USERSD] Search index closed
 	// [INFO][USERSD] API closed
@@ -88,6 +91,7 @@ func ExampleInit_verbose() {
 
 func ExampleInit_debug() {
 	opts := usersd.DefaultOptions
+	opts.Admin = ""
 	opts.Debug = true
 
 	if err := usersd.Init(opts); err != nil {

@@ -34,6 +34,7 @@ func main() {
 			"use a Unix Domain Socket.",
 	)
 
+	flag.StringVar(&usersdOpts.Admin, "admin", "admin", "Administrator user")
 	flag.StringVar(&usersdOpts.Database, "db", "", "Database location")
 	flag.BoolVar(&verbose, "verbose", true, "Enable debugging")
 	flag.BoolVar(&debug, "debug", false, "Enable debugging")

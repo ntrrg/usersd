@@ -46,14 +46,7 @@ func Reset() error {
 		return err
 	}
 
-	user, err := NewUser("", "admin", map[string]interface{}{"id": "admin"})
-
-	if err != nil {
-		l.Printf(lError+" Can't create the administrator user -> %v", err)
-		return err
-	}
-
-	if err := user.Save(); err != nil {
+	if err := admin.Save(); err != nil {
 		l.Printf(lError+" Can't create the administrator user -> %v", err)
 		return err
 	}
@@ -93,19 +86,23 @@ func dbOpen(dir string) (err error) {
 		return err
 	}
 
-	if err := os.MkdirAll(dir+"/data", 0700); err != nil {
-		l.Printf(lFatal+" Can't create the data folder -> %v", err)
-		return err
-	}
-
 	dbPath := dir + "/data/users"
 	opts := badger.DefaultOptions
 	opts.Dir = dbPath
 	opts.ValueDir = dbPath
 
 	if db, err = badger.Open(opts); err != nil {
-		l.Printf(lFatal+" Can't open/create the database -> %v", err)
-		return err
+		if err := os.MkdirAll(dir+"/data", 0700); err != nil {
+			l.Printf(lFatal+" Can't create the data folder -> %v", err)
+			return err
+		}
+
+		if db, err = badger.Open(opts); err != nil {
+			l.Printf(lFatal+" Can't open/create the database -> %+v", err)
+			return err
+		}
+
+		Reset()
 	}
 
 	return nil

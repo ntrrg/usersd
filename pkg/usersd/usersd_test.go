@@ -8,13 +8,3 @@ import (
 )
 
 var Opts = usersd.DefaultOptions
-
-type userData struct {
-	id, password string
-
-	data map[string]interface{}
-}
-
-type userCase struct {
-	in, want userData
-}
