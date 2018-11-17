@@ -10,13 +10,15 @@ import (
 )
 
 func Mux() *http.ServeMux {
+	v := "/v1"
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/reset", Reset)
 
-	uh := UsersMux()
-	mux.Handle("/user/", middleware.Adapt(uh, middleware.StripPrefix("/user")))
-	mux.Handle("/users/", middleware.Adapt(uh, middleware.StripPrefix("/users")))
+	mux.Handle(
+		v+"/users/",
+		middleware.Adapt(UsersMux(), middleware.StripPrefix(v+"/users")),
+	)
 
 	return mux
 }
