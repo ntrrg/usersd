@@ -40,7 +40,6 @@ func NewUser(id, password string, data map[string]interface{}) (*User, error) {
 	}
 
 	if err := u.SetPassword(password); err != nil {
-		l.Printf(lError+" Can't create the password hash -> %v", err)
 		return nil, err
 	}
 
@@ -57,10 +56,18 @@ func NewUserJSON(data []byte) (*User, error) {
 	u := new(User)
 
 	if err := json.Unmarshal(data, u); err != nil {
+		l.Printf(lError+" Can't deserialize the user data -> %v", err)
 		return nil, err
 	}
 
-	u.SetPassword(u.Password)
+	if err := u.SetPassword(u.Password); err != nil {
+		return nil, err
+	}
+
+	if debug {
+		l.Printf(lDebug+" Temporary user created (%v) -> %+v", u.ID, u)
+	}
+
 	return u, nil
 }
 
@@ -84,6 +91,7 @@ func ListUsers() ([]*User, error) {
 		v, err := item.ValueCopy(v)
 
 		if err != nil {
+			l.Printf(lError+" Can't fetch the user data -> %v", err)
 			return nil, err
 		}
 
@@ -94,6 +102,10 @@ func ListUsers() ([]*User, error) {
 		}
 
 		users = append(users, user)
+	}
+
+	if debug {
+		l.Printf(lDebug+" %v users fetched", len(users))
 	}
 
 	return users, nil
@@ -169,7 +181,12 @@ func (u *User) Save() error {
 		u.ID = x.String()
 	}
 
-	u.Set("createdAt", time.Now().Format("2006-01-02T15:04:05-0700"))
+	u.Set("id", u.ID)
+
+	if _, ok := u.Data["createdAt"]; !ok {
+		u.Set("createdAt", time.Now().Format("2006-01-02T15:04:05-0700"))
+	}
+
 	v, err := json.Marshal(u)
 
 	if err != nil {
@@ -215,9 +232,15 @@ func (u *User) Set(key string, value interface{}) {
 // SetPassword sets the user password from a string and returns an error if
 // any.
 func (u *User) SetPassword(password string) error {
+	if _, err := bcrypt.Cost([]byte(password)); err == nil {
+		return nil
+	}
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
 
 	if err != nil {
+		msg := lError + " Can't create the hash from the user (%v) password -> %v"
+		l.Printf(msg, u.ID, err)
 		return err
 	}
 
