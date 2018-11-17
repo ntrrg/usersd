@@ -206,8 +206,8 @@ func (u *User) Save() error {
 // Set sets the given value at the given key at Data field.
 func (u *User) Set(key string, value interface{}) {
 	u.mu.Lock()
+	defer u.mu.Unlock()
 	u.Data[key] = value
-	u.mu.Unlock()
 }
 
 // SetPassword sets the user password from a string and returns an error if
