@@ -21,11 +21,10 @@ import (
 //
 // * lastLogin: Last login date.
 type User struct {
-	ID   string                 `json:"id"`
-	Data map[string]interface{} `json:"data"`
-
-	password string
 	mu       sync.Mutex
+	ID       string                 `json:"id"`
+	Password string                 `json:"password"`
+	Data     map[string]interface{} `json:"data"`
 }
 
 // NewUser creates a user with the given arguments and populates some required
@@ -52,6 +51,19 @@ func NewUser(id, password string, data map[string]interface{}) (*User, error) {
 	return u, nil
 }
 
+// NewUserJSON creates a user with the given JSON data and populates some
+// required data if missing.
+func NewUserJSON(data []byte) (*User, error) {
+	u := new(User)
+
+	if err := json.Unmarshal(data, u); err != nil {
+		return nil, err
+	}
+
+	u.SetPassword(u.Password)
+	return u, nil
+}
+
 // ListUsers fetches users that satisfies the given constraints.
 func ListUsers() ([]*User, error) {
 	txn := db.NewTransaction(false)
@@ -75,9 +87,9 @@ func ListUsers() ([]*User, error) {
 			return nil, err
 		}
 
-		user := new(User)
+		user, err := NewUserJSON(v)
 
-		if err := user.Load(v); err != nil {
+		if err != nil {
 			return nil, err
 		}
 
@@ -106,9 +118,9 @@ func GetUser(id string) (*User, error) {
 		return nil, err
 	}
 
-	user := new(User)
+	user, err := NewUserJSON(data)
 
-	if err := user.Load(data); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -140,16 +152,6 @@ func (u *User) Delete() error {
 
 	if debug {
 		l.Printf(lDebug+" User (%v) data removed", u.ID)
-	}
-
-	return nil
-}
-
-// Load fills a user with the given JSON data, but doesn't writes to the
-// database.
-func (u *User) Load(data []byte) error {
-	if err := json.Unmarshal(data, u); err != nil {
-		return err
 	}
 
 	return nil
@@ -219,6 +221,6 @@ func (u *User) SetPassword(password string) error {
 		return err
 	}
 
-	u.password = string(hash)
+	u.Password = string(hash)
 	return nil
 }
