@@ -16,6 +16,10 @@
   version = "3.1.2"
 
 [[constraint]]
+  name = "github.com/husobee/vestigo"
+  revision = "f8f5b5dc2bd74408887fd4b462055e324c4cbd63"
+
+[[constraint]]
   name = "github.com/ntrrg/ntgo"
   branch = "master"
 

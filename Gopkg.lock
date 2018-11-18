@@ -7,7 +7,7 @@
   name = "github.com/AndreasBriese/bbloom"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "28f7e881ca57bc00e028f9ede9f0d9104cfeef5e"
+  revision = "343706a395b76e5ca5c7dca46a5d937b48febc74"
 
 [[projects]]
   digest = "1:869f3310421ff52dcddadda7541375eadc628be29aa6018e001cdd59dcb868da"
@@ -107,7 +107,7 @@
   revision = "01d5c56e609533acd717717c8acc0d2dea6bfb89"
 
 [[projects]]
-  digest = "1:b469c99e79d3bd598042e07f31fa79cf7bd62fb12cd1f4fb7aeecf1a5f7ce976"
+  digest = "1:521dbffa94d29f0d7870a44a8822272ded7abcfc6d29b047e37d7eb2cb728b26"
   name = "github.com/dgraph-io/badger"
   packages = [
     ".",
@@ -118,8 +118,8 @@
     "y",
   ]
   pruneopts = "NUT"
-  revision = "391b6d3b93e6014fe8c2971fcc0c1266e47dbbd9"
-  version = "v1.5.3"
+  revision = "99233d725dbdd26d156c61b2f42ae1671b794656"
+  version = "v1.5.4"
 
 [[projects]]
   branch = "master"
@@ -170,6 +170,13 @@
   revision = "2e65f85255dbc3072edf28d6b5b8efc472979f5a"
 
 [[projects]]
+  digest = "1:065e23c9c97ee8ad610bf049804f03648087596147f737db3bcbd6622b9b3083"
+  name = "github.com/husobee/vestigo"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "f8f5b5dc2bd74408887fd4b462055e324c4cbd63"
+
+[[projects]]
   branch = "master"
   digest = "1:874d20d479aa479b2ed0200ac565e809d8ff849f672a04e7a21536069eba1cdd"
   name = "github.com/mschoch/smat"
@@ -179,14 +186,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ff21fa805e7cf9fbb353da040b6d8febbf605cfb8351838861512a803f4530dd"
+  digest = "1:acd899184ed0cc250f013d36a1cdba130f8ce0041a0311e289aa4cf9452d4d33"
   name = "github.com/ntrrg/ntgo"
   packages = [
     "net/http",
     "net/http/middleware",
   ]
   pruneopts = "NUT"
-  revision = "416b1e7969a0213bf13162897f18446690ebf931"
+  revision = "e41e375f7a9c04da852ec42b22f6a5ab95d43c84"
 
 [[projects]]
   digest = "1:44c66ad69563dbe3f8e76d7d6cad21a03626e53f1875b5ab163ded419e01ca7a"
@@ -240,7 +247,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a7b3aa11890fbe342ed4bf76a27986473d13103ae14796dcf2b55521c93e2547"
+  digest = "1:370d49f91099ce70df877098123f6b59b1c1e54770b3443da352fab7bca01f8b"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -248,15 +255,15 @@
     "trace",
   ]
   pruneopts = "NUT"
-  revision = "26e67e76b6c3f6ce91f7c52def5af501b4e0f3a2"
+  revision = "adae6a3d119ae4890b46832a2e88a95adc62b8e7"
 
 [[projects]]
   branch = "master"
-  digest = "1:5c2d57086d29bf60bf5fc8a1e6550650034f8b26177dced9b16d1f673311ab40"
+  digest = "1:5ee70f85e91d870b68af05a6d0f26e202d097b1ddf92587f04594689876782dc"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "NUT"
-  revision = "d0be0721c37eeb5299f245a996a483160fc36940"
+  revision = "93218def8b18e66adbdab3eca8ec334700329f1f"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -265,6 +272,7 @@
     "github.com/blevesearch/bleve",
     "github.com/dgraph-io/badger",
     "github.com/gofrs/uuid",
+    "github.com/husobee/vestigo",
     "github.com/ntrrg/ntgo/net/http",
     "github.com/ntrrg/ntgo/net/http/middleware",
     "golang.org/x/crypto/bcrypt",

@@ -7,6 +7,7 @@ import (
 	nthttp "github.com/ntrrg/ntgo/net/http"
 )
 
+// Server is the main server.
 var Server *nthttp.Server
 
 func init() {

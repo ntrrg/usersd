@@ -11,11 +11,12 @@ build: dist/usersd
 .PHONY: clean
 clean:
 	rm -rf $(make_bin)
+	rm -f $(coverage_file)
 	rm -rf dist/
 
 .PHONY: deps
 deps: $(make_bin)/dep
-	PATH="$(make_bin):$$PATH" dep ensure -v
+	PATH="$(make_bin):$$PATH" dep ensure -v -update
 
 .PHONY: docs
 docs:

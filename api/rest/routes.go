@@ -6,32 +6,41 @@ package rest
 import (
 	"net/http"
 
+	"github.com/husobee/vestigo"
 	"github.com/ntrrg/ntgo/net/http/middleware"
 )
 
-func Mux() *http.ServeMux {
-	v := "/v1"
-	mux := http.NewServeMux()
+// Mux is the main mux.
+func Mux() http.Handler {
+	mux := vestigo.NewRouter()
 
+	mux.Post("/v1/users", middleware.AdaptFunc(
+		NewUser,
+		// middleware.JSONRequest(""),
+	).ServeHTTP)
+
+	mux.Get("/v1/users", middleware.AdaptFunc(
+		ListUsers,
+		middleware.Cache("max-age=3600, s-max-age=3600"),
+		middleware.Gzip(-1),
+	).ServeHTTP)
+
+	mux.Get("/v1/users/:id", middleware.AdaptFunc(
+		GetUser,
+		middleware.Cache("max-age=3600, s-max-age=3600"),
+		middleware.Gzip(-1),
+	).ServeHTTP)
+
+	mux.Put("/v1/users/:id", middleware.AdaptFunc(
+		UpdateUser,
+		// middleware.JSONRequest(""),
+	).ServeHTTP)
+
+	mux.Delete("/v1/users/:id", DeleteUser)
 	mux.HandleFunc("/reset", Reset)
 
-	mux.Handle(
-		v+"/users/",
-		middleware.Adapt(UsersMux(), middleware.StripPrefix(v+"/users")),
-	)
-
-	return mux
-}
-
-func UsersMux() *http.ServeMux {
-	mux := http.NewServeMux()
-
-	mux.Handle("/", middleware.AdaptFunc(
-		Users,
+	return middleware.Adapt(
+		mux,
 		middleware.JSONResponse(),
-		// middleware.Cache("max-age=3600, s-max-age=3600"),
-		// middleware.Gzip(-1),
-	))
-
-	return mux
+	)
 }

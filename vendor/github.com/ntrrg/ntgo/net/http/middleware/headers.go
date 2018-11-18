@@ -3,7 +3,10 @@
 
 package middleware
 
-import "net/http"
+import (
+	"net/http"
+	"strings"
+)
 
 // AddHeader creates/appends a HTTP header before calling the http.Handler.
 func AddHeader(key, value string) Adapter {
@@ -68,6 +71,31 @@ func Cache(directives string) Adapter {
 				w.Header().Set("Cache-Control", directives)
 			}
 
+			h.ServeHTTP(w, r)
+		}
+
+		return http.HandlerFunc(nh)
+	}
+}
+
+// JSONRequest checks that request has the appropriate 'Content-Type'. Responds
+// with 415 status code and msg as body if not.
+func JSONRequest(msg string) Adapter {
+	return func(h http.Handler) http.Handler {
+		nh := func(w http.ResponseWriter, r *http.Request) {
+			m := r.Method
+			ct := r.Header["Content-Type"]
+
+			if m != http.MethodPost && m != http.MethodPut && m != http.MethodPatch {
+				goto serve
+			}
+
+			if strings.HasPrefix(ct[0], "application/json") {
+				http.Error(w, msg, http.StatusUnsupportedMediaType)
+				return
+			}
+
+		serve:
 			h.ServeHTTP(w, r)
 		}
 

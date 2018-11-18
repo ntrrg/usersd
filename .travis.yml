@@ -4,7 +4,7 @@ sudo: false
 git:
   depth: 1
 language: go
-go: "1.11.1"
-script: make ci
+go: "1.11.2"
+script: make deps deps-dev ci
 after_success:
   - bash <(curl -s https://codecov.io/bash)

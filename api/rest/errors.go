@@ -3,21 +3,23 @@
 
 package rest
 
+// Error represents an error during the execution of any handler. It could be
+// just one error or a collection of them.
 type Error struct {
 	Code    int     `json:"code"`
 	Message string  `json:"message"`
 	Errors  []Error `json:"errors,omitempty"`
 }
 
-func NewError(code int, msg string) Error {
-	return Error{
-		Code:    code,
-		Message: msg,
-	}
-}
+// ErrInternal is used for internal errors.
+var ErrInternal = Error{Code: 0, Message: "Internal server error"}
 
+// Users errors (1XX codes).
 var (
-	// ErrGetUsers is used as body response when is not possible to get the users
-	// list.
-	ErrGetUsers = NewError(100, "Can't get the users")
+	ErrGetUsers = Error{Code: 100, Message: "Can't get the users list"}
+
+	ErrUnmarshalUser = Error{
+		Code:    101,
+		Message: "Can't unmarshal the user from the request body",
+	}
 )
