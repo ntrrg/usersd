@@ -4,6 +4,7 @@
 package middleware
 
 import (
+	"encoding/json"
 	"net/http"
 	"strings"
 )
@@ -13,30 +14,6 @@ func AddHeader(key, value string) Adapter {
 	return func(h http.Handler) http.Handler {
 		nh := func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add(key, value)
-			h.ServeHTTP(w, r)
-		}
-
-		return http.HandlerFunc(nh)
-	}
-}
-
-// DelHeader removes a HTTP header before calling the http.Handler.
-func DelHeader(key string) Adapter {
-	return func(h http.Handler) http.Handler {
-		nh := func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Del(key)
-			h.ServeHTTP(w, r)
-		}
-
-		return http.HandlerFunc(nh)
-	}
-}
-
-// SetHeader creates/replaces a HTTP header before calling the http.Handler.
-func SetHeader(key, value string) Adapter {
-	return func(h http.Handler) http.Handler {
-		nh := func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set(key, value)
 			h.ServeHTTP(w, r)
 		}
 
@@ -78,24 +55,50 @@ func Cache(directives string) Adapter {
 	}
 }
 
-// JSONRequest checks that request has the appropriate 'Content-Type'. Responds
-// with 415 status code and msg as body if not.
-func JSONRequest(msg string) Adapter {
+// DelHeader removes a HTTP header before calling the http.Handler.
+func DelHeader(key string) Adapter {
+	return func(h http.Handler) http.Handler {
+		nh := func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Del(key)
+			h.ServeHTTP(w, r)
+		}
+
+		return http.HandlerFunc(nh)
+	}
+}
+
+// JSONRequest checks that request has the appropriate HTTP method and the
+// appropriate 'Content-Type' header. Responds with http.StatusMethodNotAllowed
+// if the used method is not one of POST, PUT or PATCH. Responds with
+// http.StatusUnsupportedMediaType if the 'Content-Type' header is not valid.
+// body is used as response body.
+func JSONRequest(body interface{}) Adapter {
 	return func(h http.Handler) http.Handler {
 		nh := func(w http.ResponseWriter, r *http.Request) {
 			m := r.Method
-			ct := r.Header["Content-Type"]
 
 			if m != http.MethodPost && m != http.MethodPut && m != http.MethodPatch {
-				goto serve
-			}
+				w.Header().Set("Content-Type", "application/json; charset=utf-8")
+				http.Error(w, "", http.StatusMethodNotAllowed)
 
-			if strings.HasPrefix(ct[0], "application/json") {
-				http.Error(w, msg, http.StatusUnsupportedMediaType)
+				if err := json.NewEncoder(w).Encode(body); err != nil {
+					panic(err)
+				}
+
 				return
 			}
 
-		serve:
+			if !strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
+				w.Header().Set("Content-Type", "application/json; charset=utf-8")
+				http.Error(w, "", http.StatusUnsupportedMediaType)
+
+				if err := json.NewEncoder(w).Encode(body); err != nil {
+					panic(err)
+				}
+
+				return
+			}
+
 			h.ServeHTTP(w, r)
 		}
 
@@ -106,4 +109,16 @@ func JSONRequest(msg string) Adapter {
 // JSONResponse prepares the response to be a JSON response.
 func JSONResponse() Adapter {
 	return SetHeader("Content-Type", "application/json; charset=utf-8")
+}
+
+// SetHeader creates/replaces a HTTP header before calling the http.Handler.
+func SetHeader(key, value string) Adapter {
+	return func(h http.Handler) http.Handler {
+		nh := func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set(key, value)
+			h.ServeHTTP(w, r)
+		}
+
+		return http.HandlerFunc(nh)
+	}
 }

@@ -46,7 +46,7 @@ func Reset() error {
 		return err
 	}
 
-	if err := admin.Save(); err != nil {
+	if _, err := CreateUser(admin.ID, admin.Data); err != nil {
 		l.Printf(lError+" Can't create the administrator user -> %v", err)
 		return err
 	}

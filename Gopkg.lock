@@ -107,7 +107,7 @@
   revision = "01d5c56e609533acd717717c8acc0d2dea6bfb89"
 
 [[projects]]
-  digest = "1:521dbffa94d29f0d7870a44a8822272ded7abcfc6d29b047e37d7eb2cb728b26"
+  digest = "1:9a8567ea33f84bcf841dcaa4a1ee3900754bef3373506574567ab0dd62581330"
   name = "github.com/dgraph-io/badger"
   packages = [
     ".",
@@ -118,8 +118,7 @@
     "y",
   ]
   pruneopts = "NUT"
-  revision = "99233d725dbdd26d156c61b2f42ae1671b794656"
-  version = "v1.5.4"
+  revision = "49a49e3217461bd89dba15c33edb90779bbfece2"
 
 [[projects]]
   branch = "master"
@@ -186,14 +185,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:acd899184ed0cc250f013d36a1cdba130f8ce0041a0311e289aa4cf9452d4d33"
+  digest = "1:e7ab458e8c1e4ab9cf92f12c790c138ada3c9b2eb77fa57d68d76b9072cda9f1"
   name = "github.com/ntrrg/ntgo"
   packages = [
     "net/http",
     "net/http/middleware",
   ]
   pruneopts = "NUT"
-  revision = "e41e375f7a9c04da852ec42b22f6a5ab95d43c84"
+  revision = "7136e840a5ca656398b847cbf38fb217ed2a252f"
 
 [[projects]]
   digest = "1:44c66ad69563dbe3f8e76d7d6cad21a03626e53f1875b5ab163ded419e01ca7a"
@@ -259,11 +258,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:5ee70f85e91d870b68af05a6d0f26e202d097b1ddf92587f04594689876782dc"
+  digest = "1:134392bed1074be912a37ea13483f27e6e827f4e4d6cc319f69d3ac3617d5ac0"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "NUT"
-  revision = "93218def8b18e66adbdab3eca8ec334700329f1f"
+  revision = "4ed8d59d0b35e1e29334a206d1b3f38b1e5dfb31"
 
 [solve-meta]
   analyzer-name = "dep"

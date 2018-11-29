@@ -10,7 +10,7 @@ wrapping.
 	func MyAdapter(h http.Handler) http.Handler {
 		nh := func(w http.ResponseWriter, r *http.Request) {
 			// Code that run before
-			h.ServeHTTP(w, r)
+			h.ServeHTTP(w, r) // Breaks the flow if not used
 			// Code that run after
 		}
 

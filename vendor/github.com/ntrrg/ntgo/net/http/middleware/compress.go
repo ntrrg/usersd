@@ -21,7 +21,7 @@ func (w compressedResponseWriter) Write(b []byte) (int, error) {
 }
 
 // Gzip compresses the response body. The compression level is given as an
-// integer value following the compress/falte package values.
+// integer value according to the compress/flate package.
 func Gzip(level int) Adapter {
 	return func(h http.Handler) http.Handler {
 		nh := func(w http.ResponseWriter, r *http.Request) {

@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	nthttp "github.com/ntrrg/ntgo/net/http"
 
@@ -19,7 +20,8 @@ func main() {
 	var (
 		usersdOpts = usersd.DefaultOptions
 
-		restOpts nthttp.Config
+		restOpts  nthttp.Config
+		key, cert string
 
 		verbose bool
 		debug   bool
@@ -34,9 +36,18 @@ func main() {
 			"use a Unix Domain Socket.",
 	)
 
-	flag.StringVar(&usersdOpts.Admin, "admin", "admin", "Administrator user")
+	flag.StringVar(&key, "key", "", "TLS private key file")
+	flag.StringVar(&cert, "cert", "", "TLS certificate file")
+
+	flag.StringVar(
+		&usersdOpts.Admin,
+		"admin",
+		"admin:admin",
+		"Administrator user",
+	)
+
 	flag.StringVar(&usersdOpts.Database, "db", "", "Database location")
-	flag.BoolVar(&verbose, "verbose", true, "Enable debugging")
+	flag.BoolVar(&verbose, "verbose", true, "Enable verbosing")
 	flag.BoolVar(&debug, "debug", false, "Enable debugging")
 	flag.StringVar(&logfile, "log", "", "Log file location (default: stderr)")
 	flag.Parse()
@@ -48,7 +59,7 @@ func main() {
 		lf, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 
 		if err != nil {
-			log.Fatalf("[ERROR][SERVER] Can't create/open the log file. (%v)\n", err)
+			log.Fatalf("[FATAL][SERVER] Can't create/open the log file -> %v", err)
 		}
 
 		defer lf.Close()
@@ -57,15 +68,26 @@ func main() {
 	}
 
 	if err := usersd.Init(usersdOpts); err != nil {
-		log.Fatalf("[ERROR][API] Can't initialize the API. (%v)\n", err)
+		log.Fatalf("[FATAL][USERSD] Can't initialize the API -> %v", err)
 	}
 
 	defer usersd.Close()
-	rest.Server.Setup(restOpts)
+	restOpts.Handler = rest.Mux()
+	server := nthttp.NewServer(&restOpts)
 
-	if err := rest.Server.ListenAndServe(); err != http.ErrServerClosed {
-		log.Fatalf("[ERROR][SERVER] Can't start the server. (%v)\n", err)
+	var err error
+
+	if strings.Contains(restOpts.Addr, "/") {
+		err = server.ListenAndServeUDS()
+	} else if key != "" && cert != "" {
+		err = server.ListenAndServeTLS(cert, key)
+	} else {
+		err = server.ListenAndServe()
 	}
 
-	<-rest.Server.Done
+	if err != http.ErrServerClosed {
+		log.Fatalf("[FATAL][SERVER] Can't start the server -> %v", err)
+	}
+
+	<-server.Done
 }

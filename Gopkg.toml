@@ -9,7 +9,7 @@
 
 [[constraint]]
   name = "github.com/dgraph-io/badger"
-  version = "1.5.3"
+  revision = "49a49e3217461bd89dba15c33edb90779bbfece2"
 
 [[constraint]]
   name = "github.com/gofrs/uuid"

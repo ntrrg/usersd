@@ -83,20 +83,17 @@ func Init(opts Options) (err error) {
 		username, password = creds[0], creds[1]
 	}
 
-	admin, err = NewUser("admin", password, map[string]interface{}{
+	admin = NewUser("admin", map[string]interface{}{
 		"username": username,
+		"password": password,
 		"name":     "Administrator",
 	})
-
-	if err != nil {
-		l.Printf(lError+" Can't create the administrator user -> %v", err)
-		return err
-	}
 
 	if err := dbOpen(opts.Database); err != nil {
 		return err
 	}
 
+	badger.SetLogger(badgerLogger)
 	return nil
 }
 
@@ -109,3 +106,23 @@ func Close() error {
 	l.Print(lInfo + " API closed")
 	return nil
 }
+
+// Badger logger
+
+type bL struct {
+	*log.Logger
+}
+
+func (l *bL) Errorf(f string, v ...interface{}) {
+	l.Printf("[ERROR][BADGER] "+f, v...)
+}
+
+func (l *bL) Infof(f string, v ...interface{}) {
+	l.Printf("[INFO][BADGER] "+f, v...)
+}
+
+func (l *bL) Warningf(f string, v ...interface{}) {
+	l.Printf("[WARN][BADGER] "+f, v...)
+}
+
+var badgerLogger = &bL{Logger: log.New(ioutil.Discard, "", log.LstdFlags)}

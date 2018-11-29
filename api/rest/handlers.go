@@ -13,30 +13,33 @@ import (
 	"github.com/ntrrg/usersd/pkg/usersd"
 )
 
+// Healthz is the handler for the healtz endpoint.
+func Healthz(w http.ResponseWriter, r *http.Request) {
+}
+
+// Reset resets the database.
+func Reset(w http.ResponseWriter, r *http.Request) {
+	if err := usersd.Reset(); err != nil {
+		ErrInternal.ServeHTTP(w, r)
+	}
+}
+
+// Users
+
 // NewUser creates a new user.
 func NewUser(w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 
 	if err != nil {
-		log.Println(err)
-		http.Error(w, "", http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ErrInternal)
+		log.Printf("[ERROR][REST] Can't read the request body -> %v", err)
+		ErrInternal.ServeHTTP(w, r)
 		return
 	}
 
-	user, err := usersd.NewUserJSON(data)
+	user, err := usersd.CreateUserJSON(data)
 
 	if err != nil {
-		log.Println(err)
-		http.Error(w, "", http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ErrUnmarshalUser)
-		return
-	}
-
-	if user.Save(); err != nil {
-		log.Println(err)
-		http.Error(w, "", http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ErrInternal)
+		ErrInternal.ServeHTTP(w, r)
 		return
 	}
 
@@ -50,9 +53,7 @@ func ListUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := usersd.ListUsers()
 
 	if err != nil {
-		log.Println(err)
-		http.Error(w, "", http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ErrGetUsers)
+		ErrInternal.ServeHTTP(w, r)
 		return
 	}
 
@@ -65,9 +66,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	user, err := usersd.GetUser(id)
 
 	if err != nil {
-		log.Println(err)
-		http.Error(w, "", http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ErrGetUsers)
+		ErrInternal.ServeHTTP(w, r)
 		return
 	}
 
@@ -80,28 +79,22 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 
 	if err != nil {
-		log.Println(err)
-		http.Error(w, "", http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ErrInternal)
+		log.Printf("[ERROR][REST] Can't read the request body -> %v", err)
+		ErrInternal.ServeHTTP(w, r)
 		return
 	}
 
 	user, err := usersd.NewUserJSON(data)
 
 	if err != nil {
-		log.Println(err)
-		http.Error(w, "", http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ErrUnmarshalUser)
+		ErrCantUnmarshalUser.ServeHTTP(w, r)
 		return
 	}
 
 	user.ID = id
-	user.Set("id", id)
 
-	if user.Save(); err != nil {
-		log.Println(err)
-		http.Error(w, "", http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ErrInternal)
+	if user.Update(); err != nil {
+		ErrInternal.ServeHTTP(w, r)
 		return
 	}
 
@@ -111,26 +104,8 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 // DeleteUser gets a user.
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	id := vestigo.Param(r, "id")
-	user := new(usersd.User)
-	user.ID = id
 
-	if err := user.Delete(); err != nil {
-		log.Println(err)
-		http.Error(w, "", http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ErrGetUsers)
-		return
-	}
-}
-
-// Reset resets the database.
-func Reset(w http.ResponseWriter, r *http.Request) {
-	if err := usersd.Reset(); err != nil {
-		log.Println(err)
-		http.Error(w, "Can't reset the database", http.StatusInternalServerError)
-		return
-	}
-
-	if _, err := w.Write([]byte("Done.")); err != nil {
-		log.Println(err)
+	if err := usersd.NewUser(id, nil).Delete(); err != nil {
+		ErrInternal.ServeHTTP(w, r)
 	}
 }

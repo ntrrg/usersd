@@ -83,6 +83,7 @@ func ExampleInit_verbose() {
 	// [INFO][USERSD] Database directory: test-db
 	// [INFO][USERSD] Truncating database..
 	// [INFO][USERSD] Backup retored
+	// [ERROR][USERSD] Can't find the given user (admin) -> Key not found
 	// [INFO][USERSD] Database truncated
 	// [INFO][USERSD] Database closed
 	// [INFO][USERSD] Search index closed

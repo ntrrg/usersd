@@ -21,9 +21,6 @@ func Adapt(h http.Handler, a ...Adapter) http.Handler {
 }
 
 // AdaptFunc works as Adapt but for http.HandlerFunc.
-func AdaptFunc(
-	h func(w http.ResponseWriter, r *http.Request),
-	a ...Adapter,
-) http.Handler {
+func AdaptFunc(h func(w http.ResponseWriter, r *http.Request), a ...Adapter) http.Handler {
 	return Adapt(http.HandlerFunc(h), a...)
 }

@@ -17,6 +17,7 @@ clean:
 .PHONY: deps
 deps: $(make_bin)/dep
 	PATH="$(make_bin):$$PATH" dep ensure -v -update
+	rm -f vendor/github.com/blevesearch/go-porterstemmer/porterstemmer_has_suffix.g
 
 .PHONY: docs
 docs:
@@ -31,7 +32,7 @@ dist/usersd: $(gosrcfiles)
 
 $(make_bin)/dep:
 	mkdir -p $(make_bin)
-	wget -cO $@ 'https://storage.nt.web.ve/_/software/linux/dep-0.5.0-linux-amd64' || wget -cO $@ 'https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64'
+	wget -t 1 -cO $@ 'https://storage.nt.web.ve/_/software/linux/dep-0.5.0-linux-amd64' || wget -cO $@ 'https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64'
 	chmod +x $@
 
 # Development
@@ -90,7 +91,7 @@ test:
 
 $(make_bin)/gometalinter:
 	mkdir -p $(make_bin)
-	wget -cO /tmp/gometalinter.tar.gz 'https://storage.nt.web.ve/_/software/linux/gometalinter-2.0.11-linux-amd64.tar.gz' || wget -cO /tmp/gometalinter.tar.gz 'https://github.com/alecthomas/gometalinter/releases/download/v2.0.11/gometalinter-2.0.11-linux-amd64.tar.gz'
+	wget -t 1 -cO /tmp/gometalinter.tar.gz 'https://storage.nt.web.ve/_/software/linux/gometalinter-2.0.11-linux-amd64.tar.gz' || wget -cO /tmp/gometalinter.tar.gz 'https://github.com/alecthomas/gometalinter/releases/download/v2.0.11/gometalinter-2.0.11-linux-amd64.tar.gz'
 	tar -xf /tmp/gometalinter.tar.gz -C /tmp/
 	cp -a $$(find /tmp/gometalinter-2.0.11-linux-amd64/ -type f -executable) $(make_bin)/
 

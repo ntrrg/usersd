@@ -14,9 +14,14 @@ import (
 func Mux() http.Handler {
 	mux := vestigo.NewRouter()
 
+	mux.HandleFunc("/healthz", Healthz)
+	mux.HandleFunc("/reset", Reset)
+
+	// Users
+
 	mux.Post("/v1/users", middleware.AdaptFunc(
 		NewUser,
-		// middleware.JSONRequest(""),
+		middleware.JSONRequest(""),
 	).ServeHTTP)
 
 	mux.Get("/v1/users", middleware.AdaptFunc(
@@ -33,11 +38,10 @@ func Mux() http.Handler {
 
 	mux.Put("/v1/users/:id", middleware.AdaptFunc(
 		UpdateUser,
-		// middleware.JSONRequest(""),
+		middleware.JSONRequest(""),
 	).ServeHTTP)
 
 	mux.Delete("/v1/users/:id", DeleteUser)
-	mux.HandleFunc("/reset", Reset)
 
 	return middleware.Adapt(
 		mux,
