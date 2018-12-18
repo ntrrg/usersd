@@ -1,10 +1,20 @@
 os: linux
-dist: trusty
-sudo: false
+dist: xenial
 git:
   depth: 1
 language: go
-go: "1.11.2"
-script: make deps deps-dev ci
+go: "1.11.3"
+before_script:
+  - cd /tmp
+  - wget -c 'https://github.com/magefile/mage/releases/download/v1.8.0/mage_1.8.0_Linux-64bit.tar.gz'
+  - tar -xf mage_1.8.0_Linux-64bit.tar.gz
+  - cp -af /tmp/mage $(go env GOPATH)/bin/
+  - go get -u golang.org/x/lint/golint
+  - wget -c 'https://github.com/alecthomas/gometalinter/releases/download/v2.0.11/gometalinter-2.0.11-linux-amd64.tar.gz'
+  - tar -xf gometalinter-2.0.11-linux-amd64.tar.gz
+  - cp -af $(find gometalinter-2.0.11-linux-amd64/ -type f) $(go env GOPATH)/bin/
+  - cd -
+script: ./mk -v ci
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+

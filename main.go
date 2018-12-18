@@ -40,7 +40,7 @@ func main() {
 	flag.StringVar(&cert, "cert", "", "TLS certificate file")
 
 	flag.StringVar(
-		&usersdOpts.Admin,
+		&usersdOpts.AdminPassword,
 		"admin",
 		"admin:admin",
 		"Administrator user",
@@ -52,26 +52,26 @@ func main() {
 	flag.StringVar(&logfile, "log", "", "Log file location (default: stderr)")
 	flag.Parse()
 
-	usersdOpts.Verbose = verbose
-	usersdOpts.Debug = debug
-
 	if logfile != "" {
-		lf, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		lf, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 
 		if err != nil {
 			log.Fatalf("[FATAL][SERVER] Can't create/open the log file -> %v", err)
 		}
 
-		defer lf.Close()
+		defer func() {
+			if err2 := lf.Close(); err2 != nil {
+				log.Fatalf("[FATAL][SERVER] Can't close the log file -> %v", err2)
+			}
+		}()
+
 		log.SetOutput(lf)
-		usersdOpts.Logger = log.New(lf, "", log.LstdFlags)
 	}
 
-	if err := usersd.Init(usersdOpts); err != nil {
+	if _, err := usersd.New(usersdOpts); err != nil {
 		log.Fatalf("[FATAL][USERSD] Can't initialize the API -> %v", err)
 	}
 
-	defer usersd.Close()
 	restOpts.Handler = rest.Mux()
 	server := nthttp.NewServer(&restOpts)
 

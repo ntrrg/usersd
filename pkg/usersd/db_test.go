@@ -4,21 +4,13 @@
 package usersd_test
 
 import (
-	"bytes"
 	"testing"
-
-	"github.com/ntrrg/usersd/pkg/usersd"
 )
 
+// TODO: Test backup creation.
 func TestBackup(t *testing.T) {
-	if err := usersd.Init(Opts); err != nil {
-		t.Fatal(err)
-	}
+}
 
-	defer usersd.Close()
-	backup := bytes.NewBuffer(nil)
-
-	if err := usersd.Backup(backup); err != nil {
-		t.Error(err)
-	}
+// TODO: Test backup loading and search index updating.
+func TestRestore(t *testing.T) {
 }

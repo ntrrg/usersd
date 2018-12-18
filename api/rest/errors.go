@@ -30,7 +30,7 @@ func (e Error) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, body, e.HTTP)
 }
 
-func (e Error) String() string {
+func (e Error) Error() string {
 	return fmt.Sprintf("(%d) %s", e.Code, e.Message)
 }
 

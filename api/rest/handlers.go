@@ -19,9 +19,6 @@ func Healthz(w http.ResponseWriter, r *http.Request) {
 
 // Reset resets the database.
 func Reset(w http.ResponseWriter, r *http.Request) {
-	if err := usersd.Reset(); err != nil {
-		ErrInternal.ServeHTTP(w, r)
-	}
 }
 
 // Users
@@ -29,48 +26,43 @@ func Reset(w http.ResponseWriter, r *http.Request) {
 // NewUser creates a new user.
 func NewUser(w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
-
 	if err != nil {
 		log.Printf("[ERROR][REST] Can't read the request body -> %v", err)
 		ErrInternal.ServeHTTP(w, r)
 		return
 	}
 
-	user, err := usersd.CreateUserJSON(data)
-
-	if err != nil {
-		ErrInternal.ServeHTTP(w, r)
-		return
-	}
+	// Create user
+	user := &usersd.User{Email: string(data)}
 
 	w.Header().Set("Location", "/v1/users/"+user.ID)
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(user)
+
+	if err := json.NewEncoder(w).Encode(user); err != nil {
+		log.Printf("[ERROR][REST] Can't write the response -> %v", err)
+	}
 }
 
 // ListUsers list all the users.
 func ListUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := usersd.ListUsers()
+	// Get users
+	users := []*usersd.User{}
 
-	if err != nil {
-		ErrInternal.ServeHTTP(w, r)
-		return
+	if err := json.NewEncoder(w).Encode(users); err != nil {
+		log.Printf("[ERROR][REST] Can't write the response -> %v", err)
 	}
-
-	json.NewEncoder(w).Encode(users)
 }
 
 // GetUser gets a user.
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	id := vestigo.Param(r, "id")
-	user, err := usersd.GetUser(id)
 
-	if err != nil {
-		ErrInternal.ServeHTTP(w, r)
-		return
+	// Get user
+	user := &usersd.User{ID: id}
+
+	if err := json.NewEncoder(w).Encode(user); err != nil {
+		log.Printf("[ERROR][REST] Can't write the response -> %v", err)
 	}
-
-	json.NewEncoder(w).Encode(user)
 }
 
 // UpdateUser creates a new user.
@@ -84,28 +76,17 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := usersd.NewUserJSON(data)
+	// Update user
+	user := &usersd.User{ID: id, Email: string(data)}
 
-	if err != nil {
-		ErrCantUnmarshalUser.ServeHTTP(w, r)
-		return
+	if err := json.NewEncoder(w).Encode(user); err != nil {
+		log.Printf("[ERROR][REST] Can't write the response -> %v", err)
 	}
-
-	user.ID = id
-
-	if user.Update(); err != nil {
-		ErrInternal.ServeHTTP(w, r)
-		return
-	}
-
-	json.NewEncoder(w).Encode(user)
 }
 
 // DeleteUser gets a user.
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	id := vestigo.Param(r, "id")
-
-	if err := usersd.NewUser(id, nil).Delete(); err != nil {
-		ErrInternal.ServeHTTP(w, r)
-	}
+	// Delete user
+	_ = id
 }

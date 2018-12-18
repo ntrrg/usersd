@@ -4,125 +4,69 @@
 package usersd
 
 import (
-	"io/ioutil"
-	"log"
-	"os"
-	"strings"
-
-	"github.com/blevesearch/bleve"
 	"github.com/dgraph-io/badger"
 )
 
-// Logger prefixes.
-const (
-	lDebug = "[DEBUG][USERSD]"
-	lInfo  = "[INFO][USERSD]"
-	lWarn  = "[WARN][USERSD]"
-	lError = "[ERROR][USERSD]"
-	lFatal = "[FATAL][USERSD]"
-)
-
-var (
-	admin      *User
-	db         *badger.DB
-	index      bleve.Index
-	bcryptCost int
-	l          *log.Logger
-	debug      bool
-)
-
-// Options are parameters for initializing the API.
-type Options struct {
-	// Administrator user. Format: "ID[:PASSWORD]".
-	Admin string
-
-	// Database location.
-	Database string
-
-	// Password hashing strength. See https://godoc.org/golang.org/x/crypto/bcrypt#GenerateFromPassword.
-	HashingStrength int
-
-	// Debugging mode.
-	Verbose bool
-	Logger  *log.Logger
-	Debug   bool
-}
-
 // DefaultOptions are the commonly used options for a simple Init call.
 var DefaultOptions = Options{
-	Admin:           "admin:admin",
-	HashingStrength: 10,
+	AdminPassword: "admin",
 }
 
-// Init sets the API up. It receives an Options instance as argument and
-// returns an error if any.
-func Init(opts Options) (err error) {
-	if opts.Debug {
-		debug = true
-		opts.Verbose = true
+// Service is an authentication and authorization service.
+type Service struct {
+	DB    *badger.DB
+	Index Index
+
+	opts Options
+	err  error
+}
+
+// New creates and starts a service. Receives an Options instance as argument
+// and returns a Service instance and an error if any.
+func New(opts Options) (*Service, error) {
+	s := new(Service)
+	s.opts = opts
+
+	if err := s.Start(); err != nil {
+		return nil, err
 	}
 
-	if opts.Verbose && opts.Logger != nil {
-		l = opts.Logger
-	} else if opts.Verbose && opts.Logger == nil {
-		l = log.New(os.Stderr, "", log.LstdFlags)
-	} else {
-		l = log.New(ioutil.Discard, "", log.LstdFlags)
+	return s, nil
+}
+
+// Start initialize the service (databases, search indexes, etc...). Returns an
+// error if any.
+func (s *Service) Start() error {
+	return s.openDB()
+}
+
+// Close terminates the service (databases, search indexes, etc...). Any error
+// closing the service will be stored at Service.err and will be accessible
+// from Service.Err().
+func (s *Service) Close() {
+	s.err = s.closeDB()
+}
+
+// Err checks if any error occurred during some processes (closing, etc...).
+func (s *Service) Err() error {
+	return s.err
+}
+
+// IsTemp returns true if the service persistent storage is temporary.
+func (s *Service) IsTemp() bool {
+	if s.opts.Database == "" {
+		return true
 	}
 
-	bcryptCost = opts.HashingStrength
-
-	var username, password string
-	creds := strings.SplitN(opts.Admin, ":", 2)
-
-	if creds[0] == "" {
-		username, password = "admin", "admin"
-	} else if len(creds) == 1 {
-		username, password = creds[0], creds[0]
-	} else {
-		username, password = creds[0], creds[1]
-	}
-
-	admin = NewUser("admin", map[string]interface{}{
-		"username": username,
-		"password": password,
-		"name":     "Administrator",
-	})
-
-	if err := dbOpen(opts.Database); err != nil {
-		return err
-	}
-
-	badger.SetLogger(badgerLogger)
-	return nil
+	return false
 }
 
-// Close terminates with the API processes (database, search index, etc...).
-func Close() error {
-	if err := dbClose(); err != nil {
-		return err
-	}
+// Options are parameters for initializing a service.
+type Options struct {
+	// Administrator password.
+	AdminPassword string
 
-	l.Print(lInfo + " API closed")
-	return nil
+	// Database location, if an empty string is given, a temporary storage will
+	// be used.
+	Database string
 }
-
-// Badger logger
-
-type bL struct {
-	*log.Logger
-}
-
-func (l *bL) Errorf(f string, v ...interface{}) {
-	l.Printf("[ERROR][BADGER] "+f, v...)
-}
-
-func (l *bL) Infof(f string, v ...interface{}) {
-	l.Printf("[INFO][BADGER] "+f, v...)
-}
-
-func (l *bL) Warningf(f string, v ...interface{}) {
-	l.Printf("[WARN][BADGER] "+f, v...)
-}
-
-var badgerLogger = &bL{Logger: log.New(ioutil.Discard, "", log.LstdFlags)}

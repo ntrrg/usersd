@@ -4,177 +4,244 @@
 package usersd_test
 
 import (
-	"log"
 	"testing"
 
+	"github.com/blevesearch/bleve"
+	"github.com/dgraph-io/badger"
 	"github.com/gofrs/uuid"
 	"github.com/ntrrg/usersd/pkg/usersd"
+	"golang.org/x/crypto/bcrypt"
 )
 
-type userData struct {
-	id   string
-	data map[string]interface{}
-}
-
-type userCase struct {
-	in, want userData
-}
+var Opts = usersd.DefaultOptions
 
 func TestCreateUser(t *testing.T) {
-	if err := usersd.Init(Opts); err != nil {
+	ud, err := usersd.New(Opts)
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer usersd.Close()
+	defer ud.Close()
 
 	cases := []struct {
-		id   string
+		name string
+		fail bool
+		err  error
+
+		id, email, password string
+
 		data map[string]interface{}
 	}{
-		{data: map[string]interface{}{
-			"username": "ntrrg",
-		}},
+		{
+			name:     "Regular",
+			email:    "john@example.com",
+			password: "1234",
+		},
+
+		{
+			name:     "ExtraData",
+			id:       "test",
+			email:    "john@example.com",
+			password: "1234",
+			data: map[string]interface{}{
+				"username": "john",
+				"name":     "John Doe",
+			},
+		},
+
+		{
+			name:     "EmptyEmail",
+			fail:     true,
+			err:      usersd.ErrUserEmailEmpty,
+			password: "1234",
+		},
+
+		{
+			name:  "EmptyPassword",
+			fail:  true,
+			err:   usersd.ErrUserPasswordEmpty,
+			email: "john@example.com",
+		},
+
+		{
+			name:     "ExistentUser",
+			fail:     true,
+			err:      usersd.ErrUserIDNotFound,
+			email:    "john@example.com",
+			password: "1234",
+		},
 	}
 
-	for i, c := range cases {
-		user, err := usersd.CreateUser(c.id, c.data)
+	tx := ud.DB.NewTransaction(true)
+	defer tx.Discard()
+	index := ud.Index["users"]
 
-		if err != nil {
-			t.Errorf("TC#%v: %s", i, err)
-		}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			user, err := usersd.NewUser(tx, index, nil, c.id, c.email, c.password, c.data)
 
-		if c.id == "" {
-			id, err := uuid.FromString(user.ID)
+			switch {
+			case err != nil && !c.fail:
+				t.Fatal(err)
+			case err == nil && c.fail:
+				t.Fatal("User created")
+			case err != nil && c.fail:
+				if c.err != nil && err.Error() != c.err.Error() {
+					t.Fatalf("Invalid error %s, want %s", err, c.err)
+				}
 
-			if err != nil {
-				t.Errorf(
-					"TC#%v: NewUser(%+v).ID invalid UUID (%v) -> %s",
-					i, c, user.ID, err,
-				)
+				return
 			}
 
-			if id.Version() != 4 {
-				t.Errorf(
-					"TC#%v: NewUser(%+v).ID invalid UUID version (%v)",
-					i, c, id.Version(),
-				)
+			if c.id == "" {
+				id, err := uuid.FromString(user.ID)
+				if err != nil {
+					t.Fatalf("Invalid UUID (%v) -> %s", user.ID, err)
+				}
+
+				if id.Version() != 4 {
+					t.Errorf("Invalid UUID version (%v)", id.Version())
+				}
+			} else {
+				if user.ID != c.id {
+					t.Errorf("User ID = %v, want %v", user.ID, c.id)
+				}
 			}
-		} else {
-			if user.ID != c.id {
-				t.Errorf(
-					"TC#%v: NewUser(%v).ID == %+v, want %v",
-					i, c, user.ID, c.id,
-				)
+
+			if _, err := bcrypt.Cost([]byte(user.Password)); err != nil {
+				t.Errorf("Invalid password hash (%v) -> %s", user.Password, err)
 			}
-		}
+		})
+	}
+}
+
+func TestGetUser(t *testing.T) {
+	ud, err := usersd.New(Opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer ud.Close()
+
+	tx := ud.DB.NewTransaction(true)
+	defer tx.Discard()
+	index := ud.Index["users"]
+
+	usersFixtures(t, tx, index)
+
+	user, err := usersd.GetUser(tx, "admin")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if user.Email != "admin@example.com" {
+		t.Errorf("GetUser(admin).Email == %v, wants admin@example.com", user.Email)
+	}
+
+	if user.Mode != "local" {
+		t.Errorf("GetUser(admin).Mode == %v, wants local", user.Mode)
 	}
 }
 
 func TestListUsers(t *testing.T) {
-	if err := usersd.Init(Opts); err != nil {
+	ud, err := usersd.New(Opts)
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer usersd.Close()
-	usersFixtures()
+	defer ud.Close()
 
-	users, err := usersd.ListUsers()
+	tx := ud.DB.NewTransaction(true)
+	defer tx.Discard()
+	index := ud.Index["users"]
 
+	usersFixtures(t, tx, index)
+	users, err := usersd.GetUsers(tx, index, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if len(users) < 1 {
-		t.Error("ListUsers() doesn't fetch any data.")
+		t.Error("GetUsers() doesn't fetch any data.")
 	}
 }
 
-func TestGetUser(t *testing.T) {
-	if err := usersd.Init(Opts); err != nil {
-		t.Fatal(err)
-	}
+func usersFixtures(t *testing.T, tx *badger.Txn, index bleve.Index) {
+	users := []struct {
+		id, email, password string
 
-	defer usersd.Close()
-	usersFixtures()
-
-	cases := []struct {
-		in, want string
+		data map[string]interface{}
 	}{
-		{"admin", "Administrator"},
-	}
-
-	for i, c := range cases {
-		user, err := usersd.GetUser(c.in)
-
-		if err != nil {
-			t.Errorf("TC#%v: GetUser(%v) error -> %v", i, c.in, err)
-			continue
-		}
-
-		name := user.Data["name"]
-
-		if name != c.want {
-			msg := "TC#%v: GetUser(%v).Data[name] == %v, wants %v"
-			t.Errorf(msg, i, c.in, name, c.want)
-		}
-	}
-}
-
-func TestUser_Delete(t *testing.T) {
-	if err := usersd.Init(Opts); err != nil {
-		t.Fatal(err)
-	}
-
-	defer usersd.Close()
-	usersFixtures()
-
-	users, err := usersd.ListUsers()
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	x := len(users)
-
-	for _, user := range users {
-		if err := user.Delete(); err != nil {
-			t.Errorf("User(%+v).Delete() error -> %v", user, err)
-		}
-	}
-
-	users, err = usersd.ListUsers()
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(users) >= x {
-		msg := "The users list keeps data even after calling User.Delete()"
-		t.Error(msg)
-	}
-}
-
-func usersFixtures() {
-	users := []userData{
 		{
-			data: map[string]interface{}{
-				"password": "1234",
-			},
+			id:       "admin",
+			email:    "admin@example.com",
+			password: "admin",
 		},
 
 		{
+			email:    "john@example.com",
+			password: "1234",
+		},
+
+		{
+			email:    "john@example.com",
+			password: "1234",
 			data: map[string]interface{}{
-				"username": "ntrrg",
-				"name":     "Miguel Angel Rivera Notararigo",
+				"username": "john",
+				"name":     "John Doe",
 			},
 		},
 	}
 
 	for _, u := range users {
-		_, err := usersd.CreateUser(u.id, u.data)
+		_, err := usersd.NewUser(tx, index, nil, u.id, u.email, u.password, u.data)
 
 		if err != nil {
-			log.Fatal(err)
+			t.Fatal(err)
 		}
 	}
 }
+
+// func TestUser_Delete(t *testing.T) {
+// 	if err := usersd.Init(Opts); err != nil {
+// 		t.Fatal(err)
+// 	}
+//
+// 	defer func() {
+// 		if err := usersd.Close(); err != nil {
+// 			t.Fatal(err)
+// 		}
+// 	}()
+//
+// 	usersFixtures()
+//
+// 	users, err := usersd.ListUsers()
+//
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+//
+// 	x := len(users)
+//
+// 	for _, user := range users {
+// 		if err2 := user.Delete(); err2 != nil {
+// 			t.Errorf("User(%+v).Delete() error -> %v", user, err2)
+// 		}
+// 	}
+//
+// 	users, err = usersd.ListUsers()
+//
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+//
+// 	if len(users) >= x {
+// 		msg := "The users list keeps data even after calling User.Delete()"
+// 		t.Error(msg)
+// 	}
+// }
+//
+// type userData struct {
+// 	id   string
+// 	data map[string]interface{}
+// }

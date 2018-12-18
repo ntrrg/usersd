@@ -4,127 +4,158 @@
 package usersd
 
 import (
-	"bytes"
-	"io"
 	"io/ioutil"
+	"log"
 	"os"
 
 	"github.com/blevesearch/bleve"
 	"github.com/dgraph-io/badger"
 )
 
-// Backup writes a database backup to the given io.Writer.
-func Backup(w io.Writer) error {
-	if _, err := db.Backup(w, 0); err != nil {
-		l.Printf(lError+" Can't create the database backup -> %v", err)
-		return err
-	}
+// Index is a collection of Bleve search indexes.
+type Index map[string]bleve.Index
 
-	l.Print(lInfo + " Backup created")
-	return nil
+// SearchOptions contains searching constraints and sorting rules.
+type SearchOptions struct {
+	Query   string
+	Filters []string
+	Sort    []string
 }
 
-// Restore reads a database backup from the given io.Reader.
-func Restore(r io.Reader) error {
-	err := db.Load(r)
-
-	if err != nil {
-		l.Printf(lError+" Can't restore the database backup -> %v", err)
-	} else {
-		l.Print(lInfo + " Backup retored")
-	}
-
-	return err
+// String implements fmt.Stringer.
+func (so *SearchOptions) String() string {
+	return ""
 }
 
-// Reset loads default data to the database.
-func Reset() error {
-	l.Print(lInfo + " Truncating database..")
-	empty := bytes.NewBuffer(nil)
+// // Backup writes a database backup to the given io.Writer. Returns an error if
+// // any.
+// func (s *Service) Backup(w io.Writer) error {
+// 	if _, err := s.DB.Backup(w, 0); err != nil {
+// 		return err
+// 	}
+//
+// 	return nil
+// }
+//
+// // Restore reads a database backup from the given io.Reader. Returns an error
+// // if any.
+// func (s *Service) Restore(r io.Reader) error {
+// 	if err := s.DB.Load(r); err != nil {
+// 		return err
+// 	}
+//
+// 	return nil
+// }
 
-	if err := Restore(empty); err != nil {
-		return err
-	}
+// openDB opens/creates database and indexing directories. Return an error if
+// any.
+func (s *Service) openDB() (err error) {
+	defer func() {
+		if err != nil {
+			s.closeDB()
+		}
+	}()
 
-	if _, err := CreateUser(admin.ID, admin.Data); err != nil {
-		l.Printf(lError+" Can't create the administrator user -> %v", err)
-		return err
-	}
-
-	l.Print(lInfo + " Database truncated")
-	return nil
-}
-
-// dbOpen opens/creates database and indexing directories. It receives a
-// string as argument, which is the path to store the data, if an empty string
-// is given, a temporary storage will be used.
-func dbOpen(dir string) (err error) {
+	dir := s.opts.Database
 	if dir == "" {
 		if dir, err = ioutil.TempDir("", "usersd"); err != nil {
-			l.Printf(lFatal+" Can't create a temporary directory -> %v", err)
 			return err
 		}
-
-		l.Print(lWarn + " Using a temporary database directory")
 	}
 
-	l.Printf(lInfo+" Database directory: %s\n", dir)
-
-	indexPath := dir + "/search/users"
-	index, err = bleve.Open(indexPath)
-
-	if err == bleve.Error(1) { // ErrorIndexPathDoesNotExist
-		mapping := bleve.NewIndexMapping()
-		index, err = bleve.New(indexPath, mapping)
-
-		if err != nil {
-			l.Printf(lFatal+" Can't create the search index -> %v", err)
-			return err
-		}
-	} else if err != nil {
-		l.Printf(lFatal+" Can't open the search index -> %v", err)
+	if s.DB, err = openDB(dir + "/data"); err != nil {
 		return err
 	}
 
-	dbPath := dir + "/data/users"
-	opts := badger.DefaultOptions
-	opts.Dir = dbPath
-	opts.ValueDir = dbPath
+	s.Index = make(Index)
 
-	if db, err = badger.Open(opts); err != nil {
-		if err := os.MkdirAll(dir+"/data", 0700); err != nil {
-			l.Printf(lFatal+" Can't create the data folder -> %v", err)
+	indexes := []string{
+		"users",
+	}
+
+	for _, name := range indexes {
+		if s.Index[name], err = openIndex(dir + "/search/" + name); err != nil {
 			return err
+		}
+	}
+
+	badger.SetLogger(badgerLogger)
+	return nil
+}
+
+// closeDB closes the database and the search index. Returns an error if any.
+func (s *Service) closeDB() error {
+	if err := s.DB.Close(); err != nil {
+		return err
+	}
+
+	for key, index := range s.Index {
+		_, kvs, err := index.Advanced()
+		if err != nil {
+			return err
+		}
+
+		if err := kvs.Close(); err != nil {
+			return err
+		}
+
+		delete(s.Index, key)
+	}
+
+	return nil
+}
+
+func openDB(dir string) (*badger.DB, error) {
+	opts := badger.DefaultOptions
+	opts.Dir = dir
+	opts.ValueDir = dir
+
+	db, err := badger.Open(opts)
+	if err != nil {
+		if err := os.MkdirAll(dir+"/data", 0700); err != nil {
+			return nil, err
 		}
 
 		if db, err = badger.Open(opts); err != nil {
-			l.Printf(lFatal+" Can't open/create the database -> %+v", err)
-			return err
+			return nil, err
 		}
-
-		Reset()
 	}
 
-	return nil
+	return db, nil
 }
 
-// dbClose closes the database and the search index.
-func dbClose() error {
-	db.Close()
-	l.Print(lInfo + " Database closed")
+func openIndex(dir string) (bleve.Index, error) {
+	index, err := bleve.Open(dir)
+	if err == bleve.Error(1) { // ErrorIndexPathDoesNotExist
+		mapping := bleve.NewIndexMapping()
+		index, err = bleve.New(dir, mapping)
 
-	_, kvs, err := index.Advanced()
-
-	if err != nil {
-		l.Printf(lError+" Can't get the search index database -> %v", err)
-		return err
+		if err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
 	}
 
-	if err := kvs.Close(); err != nil {
-		l.Printf(lError+" Can't close the search index database -> %v", err)
-		return err
-	}
-
-	l.Print(lInfo + " Search index closed")
-	return nil
+	return index, nil
 }
+
+// Badger logger
+
+type bL struct {
+	*log.Logger
+}
+
+func (l *bL) Errorf(f string, v ...interface{}) {
+	l.Printf(f, v...)
+}
+
+func (l *bL) Infof(f string, v ...interface{}) {
+	l.Printf(f, v...)
+}
+
+func (l *bL) Warningf(f string, v ...interface{}) {
+	l.Printf(f, v...)
+}
+
+var badgerLogger = &bL{Logger: log.New(ioutil.Discard, "", log.LstdFlags)}
