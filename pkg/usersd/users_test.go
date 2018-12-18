@@ -23,10 +23,13 @@ func TestCreateUser(t *testing.T) {
 
 	defer ud.Close()
 
+	tx := ud.DB.NewTransaction(true)
+	defer tx.Discard()
+	index := ud.Index["users"]
+
 	cases := []struct {
 		name string
 		fail bool
-		err  error
 
 		id, email, password string
 
@@ -41,7 +44,7 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:     "ExtraData",
 			id:       "test",
-			email:    "john@example.com",
+			email:    "john2@example.com",
 			password: "1234",
 			data: map[string]interface{}{
 				"username": "john",
@@ -52,29 +55,22 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:     "EmptyEmail",
 			fail:     true,
-			err:      usersd.ErrUserEmailEmpty,
 			password: "1234",
 		},
 
 		{
 			name:  "EmptyPassword",
 			fail:  true,
-			err:   usersd.ErrUserPasswordEmpty,
 			email: "john@example.com",
 		},
 
 		{
 			name:     "ExistentUser",
 			fail:     true,
-			err:      usersd.ErrUserIDNotFound,
 			email:    "john@example.com",
 			password: "1234",
 		},
 	}
-
-	tx := ud.DB.NewTransaction(true)
-	defer tx.Discard()
-	index := ud.Index["users"]
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -86,10 +82,6 @@ func TestCreateUser(t *testing.T) {
 			case err == nil && c.fail:
 				t.Fatal("User created")
 			case err != nil && c.fail:
-				if c.err != nil && err.Error() != c.err.Error() {
-					t.Fatalf("Invalid error %s, want %s", err, c.err)
-				}
-
 				return
 			}
 
@@ -143,7 +135,7 @@ func TestGetUser(t *testing.T) {
 	}
 }
 
-func TestListUsers(t *testing.T) {
+func TestGettUsers(t *testing.T) {
 	ud, err := usersd.New(Opts)
 	if err != nil {
 		t.Fatal(err)
@@ -156,13 +148,39 @@ func TestListUsers(t *testing.T) {
 	index := ud.Index["users"]
 
 	usersFixtures(t, tx, index)
-	users, err := usersd.GetUsers(tx, index, nil)
-	if err != nil {
-		t.Fatal(err)
+
+	cases := []struct {
+		name string
+		q    string
+		sort []string
+		want int
+	}{
+		{name: "All", want: 3},
+
+		{
+			name: "AllSorted",
+			want: 3,
+			sort: []string{"-email"},
+		},
+
+		{
+			name: "ByEmail",
+			want: 1,
+			q:    `email:"john@example.com"`,
+		},
 	}
 
-	if len(users) < 1 {
-		t.Error("GetUsers() doesn't fetch any data.")
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			users, err := usersd.GetUsers(tx, index, c.q, c.sort...)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if len(users) != c.want {
+				t.Errorf("GetUsers(%v, %v) gets invalid data -> %v", c.q, c.sort, users)
+			}
+		})
 	}
 }
 
@@ -184,7 +202,7 @@ func usersFixtures(t *testing.T, tx *badger.Txn, index bleve.Index) {
 		},
 
 		{
-			email:    "john@example.com",
+			email:    "john2@example.com",
 			password: "1234",
 			data: map[string]interface{}{
 				"username": "john",

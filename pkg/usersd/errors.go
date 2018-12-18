@@ -21,6 +21,12 @@ var (
 		Message: "The given email is empty",
 	}
 
+	ErrUserEmailExists = ValidationError{
+		Code:    5,
+		Field:   "email",
+		Message: "The given email already exists",
+	}
+
 	ErrUserPasswordEmpty = ValidationError{
 		Code:    3,
 		Field:   "password",

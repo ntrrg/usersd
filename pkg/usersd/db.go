@@ -15,18 +15,6 @@ import (
 // Index is a collection of Bleve search indexes.
 type Index map[string]bleve.Index
 
-// SearchOptions contains searching constraints and sorting rules.
-type SearchOptions struct {
-	Query   string
-	Filters []string
-	Sort    []string
-}
-
-// String implements fmt.Stringer.
-func (so *SearchOptions) String() string {
-	return ""
-}
-
 // // Backup writes a database backup to the given io.Writer. Returns an error if
 // // any.
 // func (s *Service) Backup(w io.Writer) error {

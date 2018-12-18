@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/blevesearch/bleve"
+	"github.com/blevesearch/bleve/search/query"
 	"github.com/dgraph-io/badger"
 	"github.com/gofrs/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -58,39 +59,37 @@ func GetUser(tx *badger.Txn, id string) (*User, error) {
 }
 
 // GetUsers fetches users that satisfies the given constraints.
-func GetUsers(tx *badger.Txn, index bleve.Index, so *SearchOptions) ([]*User, error) {
-	var users []*User
-
-	it := tx.NewIterator(badger.DefaultIteratorOptions)
-	defer it.Close()
+func GetUsers(tx *badger.Txn, index bleve.Index, q string, sort ...string) ([]*User, error) {
+	if q == "" && len(sort) == 0 {
+		return getAllUsers(tx)
+	}
 
 	var (
-		v []byte
-
-		prefix = []byte(dbKeyPrefixUsers)
+		users   []*User
+		query   query.Query
 	)
 
-	q := so.String()
-
 	if q != "" {
+		query = bleve.NewQueryStringQuery(q)
 	} else {
-		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
-			var err error
-			item := it.Item()
+		query = bleve.NewMatchAllQuery()
+	}
 
-			v, err = item.ValueCopy(v)
+	req := bleve.NewSearchRequest(query)
+	req.SortBy(sort)
 
-			if err != nil {
-				return nil, err
-			}
+	res, err := index.Search(req)
+	if err != nil {
+		return nil, err
+	}
 
-			user := new(User)
-			if err := json.Unmarshal(v, user); err != nil {
-				return nil, err
-			}
-
-			users = append(users, user)
+	for _, hit := range res.Hits {
+		user, err := GetUser(tx, hit.ID)
+		if err != nil {
+			return nil, err
 		}
+
+		users = append(users, user)
 	}
 
 	return users, nil
@@ -118,6 +117,11 @@ func (u *User) Get(key string) interface{} {
 	}
 
 	return v
+}
+
+// String implements fmt.Stringer.
+func (u *User) String() string {
+	return "(" + u.ID + ") " + u.Email
 }
 
 // Validate checks the user data and returns any errors.
@@ -218,6 +222,17 @@ func UserEmailValidator(tx *badger.Txn, index bleve.Index, user *User, old *User
 		return ErrUserEmailEmpty
 	}
 
+	q := `+email:"` + user.Email + `"`
+
+	if old != nil {
+		q = `-id:"` + user.ID + `" ` + q
+	}
+
+	users, err := GetUsers(tx, index, q)
+	if err == nil && len(users) > 0 {
+		return ErrUserEmailExists
+	}
+
 	return nil
 }
 
@@ -251,6 +266,37 @@ func UserCreatedAtValidator(tx *badger.Txn, index bleve.Index, user *User, old *
 	}
 
 	return nil
+}
+
+func getAllUsers(tx *badger.Txn) ([]*User, error) {
+	var users []*User
+
+	it := tx.NewIterator(badger.DefaultIteratorOptions)
+	defer it.Close()
+
+	var (
+		v []byte
+
+		prefix = []byte(dbKeyPrefixUsers)
+	)
+
+	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+		var err error
+		item := it.Item()
+		v, err = item.ValueCopy(v)
+		if err != nil {
+			return nil, err
+		}
+
+		user := new(User)
+		if err := json.Unmarshal(v, user); err != nil {
+			return nil, err
+		}
+
+		users = append(users, user)
+	}
+
+	return users, nil
 }
 
 // // CreateUserJSON creates a user with the given JSON, populates some required
