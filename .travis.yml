@@ -14,7 +14,7 @@ before_script:
   - tar -xf gometalinter-2.0.11-linux-amd64.tar.gz
   - cp -af $(find gometalinter-2.0.11-linux-amd64/ -type f) $(go env GOPATH)/bin/
   - cd -
-script: ./mk -v ci
+script: mage -v ci
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 
