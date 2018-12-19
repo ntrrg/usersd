@@ -184,6 +184,45 @@ func TestGettUsers(t *testing.T) {
 	}
 }
 
+func TestUser_Delete(t *testing.T) {
+	ud, err := usersd.New(Opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer ud.Close()
+
+	tx := ud.DB.NewTransaction(true)
+	defer tx.Discard()
+	index := ud.Index["users"]
+
+	usersFixtures(t, tx, index)
+
+	users, err := usersd.GetUsers(tx, index, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(users) == 0 {
+		t.Fatal("No users created")
+	}
+
+	for _, user := range users {
+		if err = user.Delete(tx, index); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	users, err = usersd.GetUsers(tx, index, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(users) != 0 {
+		t.Error("The database keeps users even after deleting all of them")
+	}
+}
+
 func TestUser_Write(t *testing.T) {
 	ud, err := usersd.New(Opts)
 	if err != nil {
@@ -254,47 +293,3 @@ func usersFixtures(t *testing.T, tx *badger.Txn, index bleve.Index) {
 		}
 	}
 }
-
-// func TestUser_Delete(t *testing.T) {
-// 	if err := usersd.Init(Opts); err != nil {
-// 		t.Fatal(err)
-// 	}
-//
-// 	defer func() {
-// 		if err := usersd.Close(); err != nil {
-// 			t.Fatal(err)
-// 		}
-// 	}()
-//
-// 	usersFixtures()
-//
-// 	users, err := usersd.ListUsers()
-//
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-//
-// 	x := len(users)
-//
-// 	for _, user := range users {
-// 		if err2 := user.Delete(); err2 != nil {
-// 			t.Errorf("User(%+v).Delete() error -> %v", user, err2)
-// 		}
-// 	}
-//
-// 	users, err = usersd.ListUsers()
-//
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-//
-// 	if len(users) >= x {
-// 		msg := "The users list keeps data even after calling User.Delete()"
-// 		t.Error(msg)
-// 	}
-// }
-//
-// type userData struct {
-// 	id   string
-// 	data map[string]interface{}
-// }

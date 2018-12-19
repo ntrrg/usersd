@@ -108,6 +108,15 @@ func NewUser(tx *badger.Txn, index bleve.Index, rules []func(tx *badger.Txn, ind
 	return u, nil
 }
 
+// Delete removes the user from the database.
+func (u *User) Delete(tx *badger.Txn, index bleve.Index) error {
+	if err := tx.Delete([]byte(dbKeyPrefixUsers + u.ID)); err != nil {
+		return err
+	}
+
+	return index.Delete(u.ID)
+}
+
 // Get gets the given value at the given key at Data field.
 func (u *User) Get(key string) interface{} {
 	v, ok := u.Data[key]
@@ -331,34 +340,4 @@ func getAllUsers(tx *badger.Txn) ([]*User, error) {
 // 	}
 //
 // 	return NewUser(u.ID, u.Data)
-// }
-//
-// // Delete removes the user from the database.
-// func (u *User) Delete() error {
-// 	txn := db.NewTransaction(true)
-// 	defer txn.Discard()
-//
-// 	if err := txn.Delete([]byte(u.ID)); err != nil {
-// 		msg := lError + " Can't remove the user (%v) from the database -> %v"
-// 		l.Printf(msg, u.ID, err)
-// 		return err
-// 	}
-//
-// 	if err := index.Delete(u.ID); err != nil {
-// 		msg := lError + " Can't remove the user (%v) from the search index -> %v"
-// 		l.Printf(msg, u.ID, err)
-// 		return err
-// 	}
-//
-// 	if err := txn.Commit(); err != nil {
-// 		msg := lError + " Can't commit changes to the database -> %v"
-// 		l.Printf(msg, err)
-// 		return err
-// 	}
-//
-// 	if debug {
-// 		l.Printf(lDebug+" User (%v) data removed", u.ID)
-// 	}
-//
-// 	return nil
 // }
