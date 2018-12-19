@@ -131,6 +131,7 @@ func (u *User) Validate(tx *badger.Txn, index bleve.Index, rules []func(tx *badg
 			UserIDValidator,
 			UserModeValidator,
 			UserEmailValidator,
+			UserVerifiedValidator,
 			UserPasswordValidator,
 			UserCreatedAtValidator,
 		}
@@ -231,6 +232,15 @@ func UserEmailValidator(tx *badger.Txn, index bleve.Index, user *User, old *User
 	users, err := GetUsers(tx, index, q)
 	if err == nil && len(users) > 0 {
 		return ErrUserEmailExists
+	}
+
+	return nil
+}
+
+// UserVerifiedValidator validates that the user email is verified.
+func UserVerifiedValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error {
+	if old == nil || user.Email != old.Email {
+		user.Verified = false
 	}
 
 	return nil
