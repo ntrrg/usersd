@@ -15,8 +15,9 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var (
+const (
 	dbKeyPrefixUsers = "users-"
+	defaultUserMode  = "local"
 
 	// Password hashing strength.
 	bcryptCost = 10
@@ -221,7 +222,7 @@ func UserIDValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) e
 // given, the user will get 'local' as value.
 func UserModeValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error {
 	if user.Mode == "" || user.Verified {
-		user.Mode = "local"
+		user.Mode = defaultUserMode
 	}
 
 	return nil
@@ -258,9 +259,9 @@ func UserVerifiedValidator(tx *badger.Txn, index bleve.Index, user *User, old *U
 
 // UserPasswordValidator validates the user password.
 func UserPasswordValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error {
-	if user.Mode == "local" && user.Password == "" {
+	if user.Mode == defaultUserMode && user.Password == "" {
 		return ErrUserPasswordEmpty
-	} else if user.Mode != "local" && user.Password == "" {
+	} else if user.Mode != defaultUserMode && user.Password == "" {
 		return nil
 	}
 
