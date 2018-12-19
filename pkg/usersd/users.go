@@ -134,6 +134,7 @@ func (u *User) Validate(tx *badger.Txn, index bleve.Index, rules []func(tx *badg
 			UserVerifiedValidator,
 			UserPasswordValidator,
 			UserCreatedAtValidator,
+			UserLastLoginValidator,
 		}
 	}
 
@@ -210,7 +211,7 @@ func UserIDValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) e
 // UserModeValidator validates from where the user were created. If none is
 // given, the user will get 'local' as value.
 func UserModeValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error {
-	if user.Mode == "" {
+	if user.Mode == "" || user.Verified {
 		user.Mode = "local"
 	}
 
@@ -248,8 +249,10 @@ func UserVerifiedValidator(tx *badger.Txn, index bleve.Index, user *User, old *U
 
 // UserPasswordValidator validates the user password.
 func UserPasswordValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error {
-	if user.Password == "" {
+	if user.Mode == "local" && user.Password == "" {
 		return ErrUserPasswordEmpty
+	} else if user.Mode != "local" && user.Password == "" {
+		return nil
 	}
 
 	password := user.Password
@@ -273,6 +276,15 @@ func UserCreatedAtValidator(tx *badger.Txn, index bleve.Index, user *User, old *
 		user.CreatedAt = time.Now().Unix()
 	} else {
 		user.CreatedAt = old.CreatedAt
+	}
+
+	return nil
+}
+
+// UserLastLoginValidator validates the users creation date.
+func UserLastLoginValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error {
+	if old == nil {
+		user.LastLogin = 0
 	}
 
 	return nil
@@ -349,21 +361,4 @@ func getAllUsers(tx *badger.Txn) ([]*User, error) {
 // 	}
 //
 // 	return nil
-// }
-//
-// // Update updates the user data in the database.
-// func (u *User) Update() error {
-// 	if err := u.Validate(UserValidationRules); err != nil {
-// 		return err
-// 	}
-//
-// 	if _, err := GetUser(u.ID); err != nil {
-// 		if err == ErrUserNotFound {
-// 			l.Printf(lError+" Can't update, the user doesn't exists (%v)", u.ID)
-// 		}
-//
-// 		return err
-// 	}
-//
-// 	return u.write()
 // }

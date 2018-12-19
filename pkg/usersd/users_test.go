@@ -184,6 +184,41 @@ func TestGettUsers(t *testing.T) {
 	}
 }
 
+func TestUser_Write(t *testing.T) {
+	ud, err := usersd.New(Opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer ud.Close()
+
+	tx := ud.DB.NewTransaction(true)
+	defer tx.Discard()
+	index := ud.Index["users"]
+
+	usersFixtures(t, tx, index)
+
+	user, err := usersd.GetUser(tx, "admin")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	user.Email = "admin@test.com"
+
+	if err := user.Write(tx, index, nil); err != nil {
+		t.Errorf("Can't write to the user -> %v", err)
+	}
+
+	newUser, err := usersd.GetUser(tx, "admin")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if newUser.Email != user.Email {
+		t.Errorf("Update failed, got %v,  wants %v", newUser.Email, user.Email)
+	}
+}
+
 func usersFixtures(t *testing.T, tx *badger.Txn, index bleve.Index) {
 	users := []struct {
 		id, email, password string
