@@ -65,17 +65,17 @@ func GetUsers(tx *badger.Txn, index bleve.Index, q string, sort ...string) ([]*U
 	}
 
 	var (
-		users   []*User
-		query   query.Query
+		users []*User
+		bq    query.Query
 	)
 
 	if q != "" {
-		query = bleve.NewQueryStringQuery(q)
+		bq = bleve.NewQueryStringQuery(q)
 	} else {
-		query = bleve.NewMatchAllQuery()
+		bq = bleve.NewMatchAllQuery()
 	}
 
-	req := bleve.NewSearchRequest(query)
+	req := bleve.NewSearchRequest(bq)
 	req.SortBy(sort)
 
 	res, err := index.Search(req)

@@ -40,7 +40,7 @@ type Index map[string]bleve.Index
 func (s *Service) openDB() (err error) {
 	defer func() {
 		if err != nil {
-			s.closeDB()
+			s.err = s.closeDB()
 		}
 	}()
 
@@ -100,7 +100,7 @@ func openDB(dir string) (*badger.DB, error) {
 
 	db, err := badger.Open(opts)
 	if err != nil {
-		if err := os.MkdirAll(dir+"/data", 0700); err != nil {
+		if err = os.MkdirAll(dir+"/data", 0700); err != nil {
 			return nil, err
 		}
 

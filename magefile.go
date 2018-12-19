@@ -126,11 +126,10 @@ func QA() {
 	out, _ := sh.OutputWith(env, "gometalinter", "--tests", "./", "./api/...", "./pkg/...")
 
 	for _, l := range strings.Split(out, "\n") {
-		if strings.Contains(l, "pkg/mod") {
-			continue
-		}
-
-		if strings.HasPrefix(l, "magefile.go") {
+		if strings.Contains(l, "pkg/mod") ||
+			strings.HasPrefix(l, "magefile.go") ||
+			strings.Contains(l, "github.com/blevesearch/bleve/search/query.Query") ||
+			strings.Contains(l, "_test.go") {
 			continue
 		}
 
