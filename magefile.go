@@ -87,7 +87,7 @@ func CoverageFile() error {
 }
 
 func (Docker) Debug() error {
-	return sh.RunV("docker", "build", "--target", "debug", "-t", dockerImage+":debug", ".")
+	return sh.RunV("docker", "build", "--target", "build", "-t", dockerImage+":debug", ".")
 }
 
 type Docs mg.Namespace

@@ -1,17 +1,19 @@
 FROM golang:1.11-alpine3.8 AS build
-WORKDIR /go/src/github.com/ntrrg/usersd
-COPY vendor vendor
-COPY pkg pkg
-COPY api api
-COPY main.go .
-RUN CGO_ENABLED=0 go build -o $(go env GOPATH)/bin/usersd
-
-FROM alpine3.8 as debug
-COPY --from=build /go/bin /bin
+RUN apk update && apk add git
+RUN \
+  cd /tmp && \
+  wget -c 'https://github.com/magefile/mage/releases/download/v1.8.0/mage_1.8.0_Linux-64bit.tar.gz' && \
+  tar -xf mage_1.8.0_Linux-64bit.tar.gz && \
+  cp -af /tmp/mage $(go env GOPATH)/bin/
+WORKDIR /src
+COPY . .
+RUN mage
 
 FROM scratch
-COPY --from=build /go/bin /bin
+COPY --from=build /src/dist /bin
 VOLUME "/data"
 EXPOSE 4000
-ENTRYPOINT ["/bin/usersd", "-db", "/data"]
+USER 1000
+ENTRYPOINT ["/bin/usersd"]
+CMD ["--db", "/data"]
 
