@@ -3,7 +3,7 @@ dist: xenial
 git:
   depth: 1
 language: go
-go: "1.11.3"
+go: "1.11.4"
 before_script:
   - cd /tmp
   - wget -c 'https://github.com/magefile/mage/releases/download/v1.8.0/mage_1.8.0_Linux-64bit.tar.gz'
