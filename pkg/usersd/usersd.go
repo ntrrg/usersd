@@ -8,9 +8,7 @@ import (
 )
 
 // DefaultOptions are the commonly used options for a simple Init call.
-var DefaultOptions = Options{
-	AdminPassword: "admin",
-}
+var DefaultOptions = Options{}
 
 // Service is an authentication and authorization service.
 type Service struct {
@@ -63,9 +61,6 @@ func (s *Service) IsTemp() bool {
 
 // Options are parameters for initializing a service.
 type Options struct {
-	// Administrator password.
-	AdminPassword string
-
 	// Database location, if an empty string is given, a temporary storage will
 	// be used.
 	Database string

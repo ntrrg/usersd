@@ -38,14 +38,6 @@ func main() {
 
 	flag.StringVar(&key, "key", "", "TLS private key file")
 	flag.StringVar(&cert, "cert", "", "TLS certificate file")
-
-	flag.StringVar(
-		&usersdOpts.AdminPassword,
-		"admin",
-		"admin:admin",
-		"Administrator user",
-	)
-
 	flag.StringVar(&usersdOpts.Database, "db", "", "Database location")
 	flag.BoolVar(&verbose, "verbose", true, "Enable verbosing")
 	flag.BoolVar(&debug, "debug", false, "Enable debugging")

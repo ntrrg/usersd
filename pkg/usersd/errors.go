@@ -4,37 +4,40 @@
 package usersd
 
 import (
+	"errors"
 	"fmt"
 )
 
-// User validation errors
+// User errors.
 var (
-	ErrUserIDNotFound = ValidationError{
+	ErrUserIDNotFound = errors.New("The given user ID doesn't exists")
+
+	ErrUserIDCreation = ValidationError{
 		Code:    1,
 		Field:   "id",
-		Message: "The given user ID doesn't exists",
+		Message: "Can't generate the user ID -> %s",
 	}
 
 	ErrUserEmailEmpty = ValidationError{
-		Code:    2,
+		Code:    10,
 		Field:   "email",
 		Message: "The given email is empty",
 	}
 
 	ErrUserEmailExists = ValidationError{
-		Code:    5,
+		Code:    11,
 		Field:   "email",
 		Message: "The given email already exists",
 	}
 
 	ErrUserPasswordEmpty = ValidationError{
-		Code:    3,
+		Code:    20,
 		Field:   "password",
 		Message: "The given password is empty",
 	}
 
 	ErrUserPasswordHash = ValidationError{
-		Code:    4,
+		Code:    21,
 		Field:   "password",
 		Message: "Can't encrypt the password -> %s",
 	}

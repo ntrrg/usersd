@@ -209,7 +209,7 @@ func UserIDValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) e
 	if user.ID == "" {
 		x, err := uuid.NewV4()
 		if err != nil {
-			return err
+			return ErrUserIDCreation.Format(err)
 		}
 
 		user.ID = x.String()
@@ -330,15 +330,3 @@ func getAllUsers(tx *badger.Txn) ([]*User, error) {
 
 	return users, nil
 }
-
-// // CreateUserJSON creates a user with the given JSON, populates some required
-// // data if missing and write it to the database.
-// func CreateUserJSON(data []byte) (*User, error) {
-// 	u, err := NewUserJSON(data)
-//
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	return NewUser(u.ID, u.Data)
-// }
