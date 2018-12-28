@@ -4,6 +4,8 @@ git:
   depth: 1
 language: go
 go: "1.11.4"
+env:
+  - GO111MODULE=on
 jobs:
   include:
     - script: ./mage -v test
