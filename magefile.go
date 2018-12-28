@@ -4,7 +4,6 @@ package main
 
 import (
 	"errors"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -109,11 +108,7 @@ func Format() error {
 func Lint() error {
 	args := []string{"-d", "-e", "-s"}
 	args = append(args, goFiles...)
-	if err := sh.RunV("gofmt", args...); err != nil {
-		return err
-	}
-
-	return sh.RunV("golint", "./", "./api/...", "./pkg/...")
+	return sh.RunV("gofmt", args...)
 }
 
 func Install() error {
@@ -121,20 +116,8 @@ func Install() error {
 	return nil
 }
 
-func QA() {
-	env := map[string]string{"CGO_ENABLED": "0"}
-	out, _ := sh.OutputWith(env, "gometalinter", "--tests", "./", "./api/...", "./pkg/...")
-
-	for _, l := range strings.Split(out, "\n") {
-		if strings.Contains(l, "pkg/mod") ||
-			strings.HasPrefix(l, "magefile.go") ||
-			strings.Contains(l, "github.com/blevesearch/bleve/search/query.Query") ||
-			strings.Contains(l, "_test.go") {
-			continue
-		}
-
-		log.Print(l)
-	}
+func QA() error {
+	return sh.RunV("golangci-lint", "run")
 }
 
 func Test() error {

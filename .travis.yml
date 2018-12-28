@@ -4,17 +4,18 @@ git:
   depth: 1
 language: go
 go: "1.11.4"
-before_script:
-  - cd /tmp
-  - wget -c 'https://github.com/magefile/mage/releases/download/v1.8.0/mage_1.8.0_Linux-64bit.tar.gz'
-  - tar -xf mage_1.8.0_Linux-64bit.tar.gz
-  - cp -af /tmp/mage $(go env GOPATH)/bin/
-  - go get -u golang.org/x/lint/golint
-  - wget -c 'https://github.com/alecthomas/gometalinter/releases/download/v2.0.11/gometalinter-2.0.11-linux-amd64.tar.gz'
-  - tar -xf gometalinter-2.0.11-linux-amd64.tar.gz
-  - cp -af $(find gometalinter-2.0.11-linux-amd64/ -type f) $(go env GOPATH)/bin/
-  - cd -
-script: mage -v ci
+jobs:
+  include:
+    - script: ./mage -v test
+    - stage: "QA"
+      name: "Linting"
+      script: ./mage -v lint
+    - name: "Test coverage"
+      script: ./mage -v coverage:default
+    - name: "Benckmarks"
+      script: ./mage -v benchmark
+    - stage: "Deploy"
+      script: ./mage -v build
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 

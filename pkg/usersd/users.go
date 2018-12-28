@@ -197,11 +197,7 @@ func (u *User) Write(tx *badger.Txn, index bleve.Index, rules []func(tx *badger.
 		return err
 	}
 
-	if err := index.Index(u.ID, u); err != nil {
-		return err
-	}
-
-	return nil
+	return index.Index(u.ID, u)
 }
 
 // UserIDValidator validates the user ID.

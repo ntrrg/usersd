@@ -1,6 +1,7 @@
-[![Travis build btatus](https://travis-ci.com/ntrrg/usersd.svg?branch=master)](https://travis-ci.com/ntrrg/usersd)
+[![Travis build status](https://travis-ci.com/ntrrg/usersd.svg?branch=master)](https://travis-ci.com/ntrrg/usersd)
 [![codecov](https://codecov.io/gh/ntrrg/usersd/branch/master/graph/badge.svg)](https://codecov.io/gh/ntrrg/usersd)
 [![goreport](https://goreportcard.com/badge/github.com/ntrrg/usersd)](https://goreportcard.com/report/github.com/ntrrg/usersd)
+[![GolangCI](https://golangci.com/badges/github.com/ntrrg/usersd.svg)](https://golangci.com/r/github.com/ntrrg/usersd)
 [![GoDoc](https://godoc.org/github.com/ntrrg/usersd/pkg/usersd?status.svg)](https://godoc.org/github.com/ntrrg/usersd/pkg/usersd)
 [![BCH compliance](https://bettercodehub.com/edge/badge/ntrrg/usersd?branch=master)](https://bettercodehub.com/results/ntrrg/usersd)
 [![Docker Build Status](https://img.shields.io/docker/build/ntrrg/usersd.svg)](https://cloud.docker.com/u/ntrrg/repository/docker/ntrrg/usersd)
@@ -14,54 +15,10 @@
 
 ### Development:
 
-#### Mage
+#### GolangCI-Lint
 
-```sh
-$ cd /tmp
-```
-
-```sh
-$ wget -c 'https://github.com/magefile/mage/releases/download/v1.8.0/mage_1.8.0_Linux-64bit.tar.gz'
-```
-
-```sh
-$ tar -xf mage_1.8.0_Linux-64bit.tar.gz
-```
-
-```sh
-$ cp -a /tmp/mage $(go env GOPATH)/bin/
-```
-
-```sh
-$ cd -
-```
-
-#### Golint
-
-```sh
-go get -u -v golang.org/x/lint/golint
-```
-
-#### Gometalinter
-
-```sh
-$ cd /tmp
-```
-
-```sh
-$ wget -c 'https://github.com/alecthomas/gometalinter/releases/download/v2.0.11/gometalinter-2.0.11-linux-amd64.tar.gz'
-```
-
-```sh
-$ tar -xf gometalinter-2.0.11-linux-amd64.tar.gz
-```
-
-```sh
-$ cp -a $(find gometalinter-2.0.11-linux-amd64/ -type f) $(go env GOPATH)/bin/
-```
-
-```sh
-$ cd -
+```shell-session
+$ wget -O - 'https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh' | sh -s -- -b $(go env GOPATH)/bin v1.12.5
 ```
 
 ## Contributing
@@ -108,5 +65,11 @@ Working on this project I use/used:
 
 * [Codecov](https://codecov.io)
 
+* [Golint](https://github.com/golang/lint/)
+
+* [Gometalinter](https://github.com/alecthomas/gometalinter)
+
 * [Mage](https://magefile.org/)
+
+* [GolangCI](https://golangci.com)
 
