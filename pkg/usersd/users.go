@@ -5,7 +5,6 @@ package usersd
 
 import (
 	"encoding/json"
-	"sync"
 	"time"
 
 	"github.com/blevesearch/bleve"
@@ -33,7 +32,6 @@ type User struct {
 	CreatedAt int64  `json:"createdAt"`
 	LastLogin int64  `json:"lastLogin"`
 
-	mu   sync.Mutex
 	Data map[string]interface{} `json:"data,omitempty"`
 }
 
@@ -118,22 +116,6 @@ func (u *User) Delete(tx *badger.Txn, index bleve.Index) error {
 	return index.Delete(u.ID)
 }
 
-// Get gets the given value at the given key at Data field.
-func (u *User) Get(key string) interface{} {
-	v, ok := u.Data[key]
-
-	if !ok {
-		return nil
-	}
-
-	return v
-}
-
-// String implements fmt.Stringer.
-func (u *User) String() string {
-	return "(" + u.ID + ") " + u.Email
-}
-
 // Validate checks the user data and returns any errors.
 func (u *User) Validate(tx *badger.Txn, index bleve.Index, rules []func(tx *badger.Txn, index bleve.Index, user *User, old *User) error) error {
 	if rules == nil {
@@ -153,7 +135,7 @@ func (u *User) Validate(tx *badger.Txn, index bleve.Index, rules []func(tx *badg
 		return err
 	}
 
-	errors := ValidationErrors{}
+	errors := Errors{}
 
 	for _, f := range rules {
 		if err := f(tx, index, u, old); err != nil {
@@ -166,20 +148,6 @@ func (u *User) Validate(tx *badger.Txn, index bleve.Index, rules []func(tx *badg
 	}
 
 	return nil
-}
-
-// Set sets the given value at the given key at Data field.
-func (u *User) Set(key string, value interface{}) {
-	u.mu.Lock()
-	defer u.mu.Unlock()
-	u.Data[key] = value
-}
-
-// Unset removes the given key from Data field.
-func (u *User) Unset(key string) {
-	u.mu.Lock()
-	defer u.mu.Unlock()
-	delete(u.Data, key)
 }
 
 // Write writes the user data to the database.

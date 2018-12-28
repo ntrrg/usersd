@@ -61,10 +61,11 @@ func (e ValidationError) Format(args ...interface{}) error {
 	return e
 }
 
-// ValidationErrors is a set of errors after validating an entity.
-type ValidationErrors []error
+// Errors is a set of errors wrapped into a single error.
+type Errors []error
 
-func (e ValidationErrors) Error() string {
+// Error implements error.
+func (e Errors) Error() string {
 	errors := ""
 
 	if len(e) > 0 {

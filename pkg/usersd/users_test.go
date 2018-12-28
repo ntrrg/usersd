@@ -15,7 +15,84 @@ import (
 
 var Opts = usersd.DefaultOptions
 
-func TestCreateUser(t *testing.T) {
+func TestGetUser(t *testing.T) {
+	ud, err := usersd.New(Opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer ud.Close()
+
+	tx := ud.DB.NewTransaction(true)
+	defer tx.Discard()
+	index := ud.Index["users"]
+
+	usersFixtures(t, tx, index)
+
+	user, err := usersd.GetUser(tx, "admin")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if user.Email != "admin@example.com" {
+		t.Errorf("GetUser(admin).Email == %v, wants admin@example.com", user.Email)
+	}
+
+	if user.Mode != "local" {
+		t.Errorf("GetUser(admin).Mode == %v, wants local", user.Mode)
+	}
+}
+
+func TestGetUsers(t *testing.T) {
+	ud, err := usersd.New(Opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer ud.Close()
+
+	tx := ud.DB.NewTransaction(true)
+	defer tx.Discard()
+	index := ud.Index["users"]
+
+	usersFixtures(t, tx, index)
+
+	cases := []struct {
+		name string
+		q    string
+		sort []string
+		want int
+	}{
+		{name: "All", want: 3},
+
+		{
+			name: "AllSorted",
+			want: 3,
+			sort: []string{"-email"},
+		},
+
+		{
+			name: "ByEmail",
+			want: 1,
+			q:    `email:"john@example.com"`,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			users, err := usersd.GetUsers(tx, index, c.q, c.sort...)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if len(users) != c.want {
+				t.Errorf("GetUsers(%v, %v) gets invalid data -> %v", c.q, c.sort, users)
+			}
+		})
+	}
+}
+
+func TestNewUser(t *testing.T) {
 	ud, err := usersd.New(Opts)
 	if err != nil {
 		t.Fatal(err)
@@ -102,83 +179,6 @@ func TestCreateUser(t *testing.T) {
 
 			if _, err := bcrypt.Cost([]byte(user.Password)); err != nil {
 				t.Errorf("Invalid password hash (%v) -> %s", user.Password, err)
-			}
-		})
-	}
-}
-
-func TestGetUser(t *testing.T) {
-	ud, err := usersd.New(Opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer ud.Close()
-
-	tx := ud.DB.NewTransaction(true)
-	defer tx.Discard()
-	index := ud.Index["users"]
-
-	usersFixtures(t, tx, index)
-
-	user, err := usersd.GetUser(tx, "admin")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if user.Email != "admin@example.com" {
-		t.Errorf("GetUser(admin).Email == %v, wants admin@example.com", user.Email)
-	}
-
-	if user.Mode != "local" {
-		t.Errorf("GetUser(admin).Mode == %v, wants local", user.Mode)
-	}
-}
-
-func TestGettUsers(t *testing.T) {
-	ud, err := usersd.New(Opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer ud.Close()
-
-	tx := ud.DB.NewTransaction(true)
-	defer tx.Discard()
-	index := ud.Index["users"]
-
-	usersFixtures(t, tx, index)
-
-	cases := []struct {
-		name string
-		q    string
-		sort []string
-		want int
-	}{
-		{name: "All", want: 3},
-
-		{
-			name: "AllSorted",
-			want: 3,
-			sort: []string{"-email"},
-		},
-
-		{
-			name: "ByEmail",
-			want: 1,
-			q:    `email:"john@example.com"`,
-		},
-	}
-
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			users, err := usersd.GetUsers(tx, index, c.q, c.sort...)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if len(users) != c.want {
-				t.Errorf("GetUsers(%v, %v) gets invalid data -> %v", c.q, c.sort, users)
 			}
 		})
 	}

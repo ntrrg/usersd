@@ -12,7 +12,7 @@ jobs:
     - stage: "QA"
       name: "Linting"
       script: ./mage -v lint
-    - name: "Test coverage"
+    - name: "Tests coverage"
       script: ./mage -v coverage:default
     - name: "Benckmarks"
       script: ./mage -v benchmark
