@@ -27,7 +27,7 @@ func ExampleNew() {
 
 	// Can't be deferred because the next example uses the same database
 	ud.Close()
-	if err := ud.Err(); err != nil {
+	if err = ud.Err(); err != nil {
 		// Error handling
 		return
 	}

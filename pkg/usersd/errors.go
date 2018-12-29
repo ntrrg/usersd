@@ -10,36 +10,36 @@ import (
 
 // User errors.
 var (
-	ErrUserIDNotFound = errors.New("The given user ID doesn't exists")
+	ErrUserIDNotFound = errors.New("the given user ID doesn't exists")
 
 	ErrUserIDCreation = ValidationError{
 		Code:    1,
 		Field:   "id",
-		Message: "Can't generate the user ID -> %s",
+		Message: "can't generate the user ID -> %s",
 	}
 
 	ErrUserEmailEmpty = ValidationError{
 		Code:    10,
 		Field:   "email",
-		Message: "The given email is empty",
+		Message: "the given email is empty",
 	}
 
 	ErrUserEmailExists = ValidationError{
 		Code:    11,
 		Field:   "email",
-		Message: "The given email already exists",
+		Message: "the given email already exists",
 	}
 
 	ErrUserPasswordEmpty = ValidationError{
 		Code:    20,
 		Field:   "password",
-		Message: "The given password is empty",
+		Message: "the given password is empty",
 	}
 
 	ErrUserPasswordHash = ValidationError{
 		Code:    21,
 		Field:   "password",
-		Message: "Can't encrypt the password -> %s",
+		Message: "can't encrypt the password -> %s",
 	}
 )
 

@@ -69,11 +69,12 @@ func main() {
 
 	var err error
 
-	if strings.Contains(restOpts.Addr, "/") {
+	switch {
+	case strings.Contains(restOpts.Addr, "/"):
 		err = server.ListenAndServeUDS()
-	} else if key != "" && cert != "" {
+	case key != "" && cert != "":
 		err = server.ListenAndServeTLS(cert, key)
-	} else {
+	default:
 		err = server.ListenAndServe()
 	}
 

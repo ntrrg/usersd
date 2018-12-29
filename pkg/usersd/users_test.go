@@ -79,6 +79,8 @@ func TestGetUsers(t *testing.T) {
 	}
 
 	for _, c := range cases {
+		c := c
+
 		t.Run(c.name, func(t *testing.T) {
 			users, err := usersd.GetUsers(tx, index, c.q, c.sort...)
 			if err != nil {
@@ -92,7 +94,7 @@ func TestGetUsers(t *testing.T) {
 	}
 }
 
-func TestNewUser(t *testing.T) {
+func TestNewUser(t *testing.T) { // nolint: gocyclo
 	ud, err := usersd.New(Opts)
 	if err != nil {
 		t.Fatal(err)
@@ -150,8 +152,13 @@ func TestNewUser(t *testing.T) {
 	}
 
 	for _, c := range cases {
+		c := c
+
 		t.Run(c.name, func(t *testing.T) {
-			user, err := usersd.NewUser(tx, index, nil, c.id, c.email, c.password, c.data)
+			user, err := usersd.NewUser(
+				tx, index, nil,
+				c.id, c.email, c.password, c.data,
+			)
 
 			switch {
 			case err != nil && !c.fail:
@@ -244,7 +251,7 @@ func TestUser_Write(t *testing.T) {
 
 	user.Email = "admin@test.com"
 
-	if err := user.Write(tx, index, nil); err != nil {
+	if err = user.Write(tx, index, nil); err != nil {
 		t.Errorf("Can't write to the user -> %v", err)
 	}
 

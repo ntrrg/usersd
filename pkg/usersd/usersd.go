@@ -52,11 +52,7 @@ func (s *Service) Err() error {
 
 // IsTemp returns true if the service persistent storage is temporary.
 func (s *Service) IsTemp() bool {
-	if s.opts.Database == "" {
-		return true
-	}
-
-	return false
+	return s.opts.Database == ""
 }
 
 // Options are parameters for initializing a service.

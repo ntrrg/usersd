@@ -15,8 +15,8 @@ import (
 // Index is a collection of Bleve search indexes.
 type Index map[string]bleve.Index
 
-// // Backup writes a database backup to the given io.Writer. Returns an error if
-// // any.
+// Backup writes a database backup to the given io.Writer. Returns an error if
+// any.
 // func (s *Service) Backup(w io.Writer) error {
 // 	if _, err := s.DB.Backup(w, 0); err != nil {
 // 		return err
@@ -24,9 +24,9 @@ type Index map[string]bleve.Index
 //
 // 	return nil
 // }
-//
-// // Restore reads a database backup from the given io.Reader. Returns an error
-// // if any.
+
+// Restore reads a database backup from the given io.Reader. Returns an error
+// if any.
 // func (s *Service) Restore(r io.Reader) error {
 // 	if err := s.DB.Load(r); err != nil {
 // 		return err
