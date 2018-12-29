@@ -99,9 +99,9 @@ func GetUsers(tx *badger.Txn, index bleve.Index, q string, sort ...string) ([]*U
 // database. Receives a Badger transaction, a Bleve search index, an optional
 // user ID, an email and a password; returns a User instance and an error if
 // any.
-func NewUser(tx *badger.Txn, index bleve.Index, rules []func(tx *badger.Txn, index bleve.Index, user *User, old *User) error, id, email, password string, data map[string]interface{}) (*User, error) { // nolint: lll
+func NewUser(tx *badger.Txn, index bleve.Index, id, email, password string, data map[string]interface{}) (*User, error) { // nolint: lll
 	u := &User{ID: id, Email: email, Password: password, Data: data}
-	if err := u.Write(tx, index, rules); err != nil {
+	if err := u.Write(tx, index); err != nil {
 		return nil, err
 	}
 
@@ -118,25 +118,23 @@ func (u *User) Delete(tx *badger.Txn, index bleve.Index) error {
 }
 
 // Validate checks the user data and returns any errors.
-func (u *User) Validate(tx *badger.Txn, index bleve.Index, rules []func(tx *badger.Txn, index bleve.Index, user *User, old *User) error) error { // nolint: lll
-	if rules == nil {
-		rules = []func(tx *badger.Txn, index bleve.Index, user *User, old *User) error{ // nolint: lll
-			UserIDValidator,
-			UserModeValidator,
-			UserEmailValidator,
-			UserVerifiedValidator,
-			UserPasswordValidator,
-			UserCreatedAtValidator,
-			UserLastLoginValidator,
-		}
-	}
-
+func (u *User) Validate(tx *badger.Txn, index bleve.Index) error {
 	old, err := GetUser(tx, u.ID)
 	if err != nil && err != ErrUserIDNotFound {
 		return err
 	}
 
 	errors := Errors{}
+
+	rules := []func(tx *badger.Txn, index bleve.Index, user *User, old *User) error{ // nolint: lll
+		userIDValidator,
+		userModeValidator,
+		userEmailValidator,
+		userVerifiedValidator,
+		userPasswordValidator,
+		userCreatedAtValidator,
+		userLastLoginValidator,
+	}
 
 	for _, f := range rules {
 		if err := f(tx, index, u, old); err != nil {
@@ -152,8 +150,8 @@ func (u *User) Validate(tx *badger.Txn, index bleve.Index, rules []func(tx *badg
 }
 
 // Write writes the user data to the database.
-func (u *User) Write(tx *badger.Txn, index bleve.Index, rules []func(tx *badger.Txn, index bleve.Index, user *User, old *User) error) error { // nolint: lll
-	if err := u.Validate(tx, index, rules); err != nil {
+func (u *User) Write(tx *badger.Txn, index bleve.Index) error { // nolint: lll
+	if err := u.Validate(tx, index); err != nil {
 		return err
 	}
 
@@ -167,102 +165,6 @@ func (u *User) Write(tx *badger.Txn, index bleve.Index, rules []func(tx *badger.
 	}
 
 	return index.Index(u.ID, u)
-}
-
-// UserIDValidator validates the user ID.
-func UserIDValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
-	if user.ID == "" {
-		x, err := uuid.NewV4()
-		if err != nil {
-			return ErrUserIDCreation.Format(err)
-		}
-
-		user.ID = x.String()
-	}
-
-	return nil
-}
-
-// UserModeValidator validates from where the user were created. If none is
-// given, the user will get 'local' as value.
-func UserModeValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
-	if user.Mode == "" || user.Verified {
-		user.Mode = defaultUserMode
-	}
-
-	return nil
-}
-
-// UserEmailValidator validates the user email.
-func UserEmailValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
-	if user.Email == "" {
-		return ErrUserEmailEmpty
-	}
-
-	q := `+email:"` + user.Email + `"`
-
-	if old != nil {
-		q = `-id:"` + user.ID + `" ` + q
-	}
-
-	users, err := GetUsers(tx, index, q)
-	if err == nil && len(users) > 0 {
-		return ErrUserEmailExists
-	}
-
-	return nil
-}
-
-// UserVerifiedValidator validates that the user email is verified.
-func UserVerifiedValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
-	if old == nil || user.Email != old.Email {
-		user.Verified = false
-	}
-
-	return nil
-}
-
-// UserPasswordValidator validates the user password.
-func UserPasswordValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
-	if user.Mode == defaultUserMode && user.Password == "" {
-		return ErrUserPasswordEmpty
-	} else if user.Mode != defaultUserMode && user.Password == "" {
-		return nil
-	}
-
-	password := user.Password
-
-	if _, err := bcrypt.Cost([]byte(password)); err == nil {
-		return nil
-	}
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
-	if err != nil {
-		return ErrUserPasswordHash.Format(err)
-	}
-
-	user.Password = string(hash)
-	return nil
-}
-
-// UserCreatedAtValidator validates the users creation date.
-func UserCreatedAtValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
-	if old == nil {
-		user.CreatedAt = time.Now().Unix()
-	} else {
-		user.CreatedAt = old.CreatedAt
-	}
-
-	return nil
-}
-
-// UserLastLoginValidator validates the users creation date.
-func UserLastLoginValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
-	if old == nil {
-		user.LastLogin = 0
-	}
-
-	return nil
 }
 
 func getAllUsers(tx *badger.Txn) ([]*User, error) {
@@ -294,4 +196,92 @@ func getAllUsers(tx *badger.Txn) ([]*User, error) {
 	}
 
 	return users, nil
+}
+
+func userIDValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
+	if user.ID == "" {
+		x, err := uuid.NewV4()
+		if err != nil {
+			return ErrUserIDCreation.Format(err)
+		}
+
+		user.ID = x.String()
+	}
+
+	return nil
+}
+
+func userModeValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
+	if user.Mode == "" || user.Verified {
+		user.Mode = defaultUserMode
+	}
+
+	return nil
+}
+
+func userEmailValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
+	if user.Email == "" {
+		return ErrUserEmailEmpty
+	}
+
+	q := `+email:"` + user.Email + `"`
+
+	if old != nil {
+		q = `-id:"` + user.ID + `" ` + q
+	}
+
+	users, err := GetUsers(tx, index, q)
+	if err == nil && len(users) > 0 {
+		return ErrUserEmailExists
+	}
+
+	return nil
+}
+
+func userVerifiedValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
+	if old == nil || user.Email != old.Email {
+		user.Verified = false
+	}
+
+	return nil
+}
+
+func userPasswordValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
+	if user.Mode == defaultUserMode && user.Password == "" {
+		return ErrUserPasswordEmpty
+	} else if user.Mode != defaultUserMode && user.Password == "" {
+		return nil
+	}
+
+	password := user.Password
+
+	if _, err := bcrypt.Cost([]byte(password)); err == nil {
+		return nil
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
+	if err != nil {
+		return ErrUserPasswordHash.Format(err)
+	}
+
+	user.Password = string(hash)
+	return nil
+}
+
+func userCreatedAtValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
+	if old == nil {
+		user.CreatedAt = time.Now().Unix()
+	} else {
+		user.CreatedAt = old.CreatedAt
+	}
+
+	return nil
+}
+
+func userLastLoginValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
+	if old == nil {
+		user.LastLogin = 0
+	}
+
+	return nil
 }

@@ -155,10 +155,7 @@ func TestNewUser(t *testing.T) { // nolint: gocyclo
 		c := c
 
 		t.Run(c.name, func(t *testing.T) {
-			user, err := usersd.NewUser(
-				tx, index, nil,
-				c.id, c.email, c.password, c.data,
-			)
+			user, err := usersd.NewUser(tx, index, c.id, c.email, c.password, c.data)
 
 			switch {
 			case err != nil && !c.fail:
@@ -251,7 +248,7 @@ func TestUser_Write(t *testing.T) {
 
 	user.Email = "admin@test.com"
 
-	if err = user.Write(tx, index, nil); err != nil {
+	if err = user.Write(tx, index); err != nil {
 		t.Errorf("Can't write to the user -> %v", err)
 	}
 
@@ -293,7 +290,7 @@ func usersFixtures(t *testing.T, tx *badger.Txn, index bleve.Index) {
 	}
 
 	for _, u := range users {
-		_, err := usersd.NewUser(tx, index, nil, u.id, u.email, u.password, u.data)
+		_, err := usersd.NewUser(tx, index, u.id, u.email, u.password, u.data)
 
 		if err != nil {
 			t.Fatal(err)
