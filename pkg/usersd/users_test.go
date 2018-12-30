@@ -9,8 +9,9 @@ import (
 	"github.com/blevesearch/bleve"
 	"github.com/dgraph-io/badger"
 	"github.com/gofrs/uuid"
-	"github.com/ntrrg/usersd/pkg/usersd"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/ntrrg/usersd/pkg/usersd"
 )
 
 var Opts = usersd.DefaultOptions
