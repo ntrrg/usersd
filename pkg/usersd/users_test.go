@@ -8,8 +8,6 @@ import (
 
 	"github.com/blevesearch/bleve"
 	"github.com/dgraph-io/badger"
-	"github.com/gofrs/uuid"
-	"golang.org/x/crypto/bcrypt"
 
 	"github.com/ntrrg/usersd/pkg/usersd"
 )
@@ -90,100 +88,6 @@ func TestGetUsers(t *testing.T) {
 
 			if len(users) != c.want {
 				t.Errorf("GetUsers(%v, %v) gets invalid data -> %v", c.q, c.sort, users)
-			}
-		})
-	}
-}
-
-func TestNewUser(t *testing.T) { // nolint: gocyclo
-	ud, err := usersd.New(Opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer ud.Close()
-
-	tx := ud.DB.NewTransaction(true)
-	defer tx.Discard()
-	index := ud.Index["users"]
-
-	cases := []struct {
-		name string
-		fail bool
-
-		id, email, password string
-
-		data map[string]interface{}
-	}{
-		{
-			name:     "Regular",
-			email:    "john@example.com",
-			password: "1234",
-		},
-
-		{
-			name:     "ExtraData",
-			id:       "test",
-			email:    "john2@example.com",
-			password: "1234",
-			data: map[string]interface{}{
-				"username": "john",
-				"name":     "John Doe",
-			},
-		},
-
-		{
-			name:     "EmptyEmail",
-			fail:     true,
-			password: "1234",
-		},
-
-		{
-			name:  "EmptyPassword",
-			fail:  true,
-			email: "john@example.com",
-		},
-
-		{
-			name:     "ExistentUser",
-			fail:     true,
-			email:    "john@example.com",
-			password: "1234",
-		},
-	}
-
-	for _, c := range cases {
-		c := c
-
-		t.Run(c.name, func(t *testing.T) {
-			user, err := usersd.NewUser(tx, index, c.id, c.email, c.password, c.data)
-
-			switch {
-			case err != nil && !c.fail:
-				t.Fatal(err)
-			case err == nil && c.fail:
-				t.Fatal("User created")
-			case err != nil && c.fail:
-				return
-			}
-
-			if c.id == "" {
-				id, err := uuid.FromString(user.ID)
-				if err != nil {
-					t.Fatalf("Invalid UUID (%v) -> %s", user.ID, err)
-				}
-
-				if id.Version() != 4 {
-					t.Errorf("Invalid UUID version (%v)", id.Version())
-				}
-			} else {
-				if user.ID != c.id {
-					t.Errorf("User ID = %v, want %v", user.ID, c.id)
-				}
-			}
-
-			if _, err := bcrypt.Cost([]byte(user.Password)); err != nil {
-				t.Errorf("Invalid password hash (%v) -> %s", user.Password, err)
 			}
 		})
 	}
@@ -273,6 +177,88 @@ func TestUser_Write(t *testing.T) {
 	defer tx.Discard()
 	index := ud.Index["users"]
 
+	cases := []struct {
+		name string
+		fail bool
+		user *usersd.User
+	}{
+		{
+			name:     "Regular",
+			user: &usersd.User{
+				Email:    "john@example.com",
+				Password: "1234",
+			},
+		},
+
+		{
+			name:     "ExtraData",
+			user: &usersd.User{
+				ID:       "test",
+				Email:    "john2@example.com",
+				Password: "1234",
+				Data: map[string]interface{}{
+					"username": "john",
+					"name":     "John Doe",
+				},
+			},
+		},
+
+		{
+			name:     "EmptyEmail",
+			fail:     true,
+			user: &usersd.User{
+				Password: "1234",
+			},
+		},
+
+		{
+			name:  "EmptyPassword",
+			fail:  true,
+			user: &usersd.User{
+				Email: "john@example.com",
+			},
+		},
+
+		{
+			name:     "ExistentUser",
+			fail:     true,
+			user: &usersd.User{
+				Email:    "john@example.com",
+				Password: "1234",
+			},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+
+		t.Run(c.name, func(t *testing.T) {
+			err := c.user.Write(tx, index)
+
+			switch {
+			case err != nil && !c.fail:
+				t.Fatal(err)
+			case err == nil && c.fail:
+				t.Fatal("User created")
+			case err != nil && c.fail:
+				return
+			}
+		})
+	}
+}
+
+func TestUser_Write_update(t *testing.T) {
+	ud, err := usersd.New(Opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer ud.Close()
+
+	tx := ud.DB.NewTransaction(true)
+	defer tx.Discard()
+	index := ud.Index["users"]
+
 	usersFixtures(t, tx, index)
 
 	user, err := usersd.GetUser(tx, "admin")
@@ -297,36 +283,31 @@ func TestUser_Write(t *testing.T) {
 }
 
 func usersFixtures(t *testing.T, tx *badger.Txn, index bleve.Index) {
-	users := []struct {
-		id, email, password string
-
-		data map[string]interface{}
-	}{
+	users := []*usersd.User {
 		{
-			id:       "admin",
-			email:    "admin@example.com",
-			password: "admin",
+			ID:       "admin",
+			Email:    "admin@example.com",
+			Password: "admin",
 		},
 
 		{
-			email:    "john@example.com",
-			password: "1234",
+			Email:    "john@example.com",
+			Phone:    "+12345678901",
+			Password: "1234",
 		},
 
 		{
-			email:    "john2@example.com",
-			password: "1234",
-			data: map[string]interface{}{
+			Email:    "john2@example.com",
+			Password: "1234",
+			Data: map[string]interface{}{
 				"username": "john",
 				"name":     "John Doe",
 			},
 		},
 	}
 
-	for _, u := range users {
-		_, err := usersd.NewUser(tx, index, u.id, u.email, u.password, u.data)
-
-		if err != nil {
+	for _, user := range users {
+		if err := user.Write(tx, index); err != nil {
 			t.Fatal(err)
 		}
 	}

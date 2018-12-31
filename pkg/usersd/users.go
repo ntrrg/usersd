@@ -101,19 +101,6 @@ func GetUsers(tx *badger.Txn, index bleve.Index, q string, sort ...string) ([]*U
 	return users, nil
 }
 
-// NewUser creates a user with the given arguments and writes it to the
-// database. Receives a Badger transaction, a Bleve search index, an optional
-// user ID, an email and a password; returns a User instance and an error if
-// any.
-func NewUser(tx *badger.Txn, index bleve.Index, id, email, password string, data map[string]interface{}) (*User, error) { // nolint: lll
-	u := &User{ID: id, Email: email, Password: password, Data: data}
-	if err := u.Write(tx, index); err != nil {
-		return nil, err
-	}
-
-	return u, nil
-}
-
 // CheckPassword compares the given password with the user password and returns
 // true if match.
 func (u *User) CheckPassword(password string) bool {
