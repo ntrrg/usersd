@@ -27,14 +27,32 @@ var (
 		Message: "the given email is empty",
 	}
 
-	ErrUserEmailExists = ValidationError{
+	ErrUserEmailInvalid = ValidationError{
 		Code:    11,
+		Field:   "email",
+		Message: "the given email is invalid",
+	}
+
+	ErrUserEmailExists = ValidationError{
+		Code:    12,
 		Field:   "email",
 		Message: "the given email already exists",
 	}
 
-	ErrUserPhoneExists = ValidationError{
+	ErrUserPhoneEmpty = ValidationError{
 		Code:    20,
+		Field:   "phone",
+		Message: "the given phone is empty",
+	}
+
+	ErrUserPhoneInvalid = ValidationError{
+		Code:    21,
+		Field:   "phone",
+		Message: "the given phone is invalid",
+	}
+
+	ErrUserPhoneExists = ValidationError{
+		Code:    22,
 		Field:   "phone",
 		Message: "the given phone already exists",
 	}

@@ -185,7 +185,6 @@ func TestUser_Write(t *testing.T) {
 		{
 			name: "Regular",
 			user: &usersd.User{
-				Email:    "john@example.com",
 				Password: "1234",
 			},
 		},
@@ -194,7 +193,8 @@ func TestUser_Write(t *testing.T) {
 			name: "ExtraData",
 			user: &usersd.User{
 				ID:       "test",
-				Email:    "john2@example.com",
+				Email:    "john@example.com",
+				Phone:    "+12345678901",
 				Password: "1234",
 				Data: map[string]interface{}{
 					"username": "john",
@@ -204,27 +204,58 @@ func TestUser_Write(t *testing.T) {
 		},
 
 		{
-			name: "EmptyEmail",
+			name: "EmptyPassword",
+			fail: true,
+			user: &usersd.User{},
+		},
+
+		{
+			name: "OAuth2",
+			user: &usersd.User{
+				Mode:  "oauth2",
+				Email: "test@gmail.com",
+			},
+		},
+
+		{
+			name: "InvalidEmail",
 			fail: true,
 			user: &usersd.User{
+				Email:    "johnexample.com",
 				Password: "1234",
 			},
 		},
 
 		{
-			name: "EmptyPassword",
-			fail: true,
-			user: &usersd.User{
-				Email: "john@example.com",
-			},
-		},
-
-		{
-			name: "ExistentUser",
+			name: "ExistentEmail",
 			fail: true,
 			user: &usersd.User{
 				Email:    "john@example.com",
 				Password: "1234",
+			},
+		},
+
+		{
+			name: "ExistentPhone",
+			fail: true,
+			user: &usersd.User{
+				Phone:    "+12345678901",
+				Password: "1234",
+			},
+		},
+
+		{
+			name: "Update",
+			user: &usersd.User{
+				ID:       "test",
+				Email:    "john@example.com",
+				Phone:    "+12345678901",
+				Password: "1234",
+				Data: map[string]interface{}{
+					"username": "john",
+					"name":     "John Doe",
+					"age":      26,
+				},
 			},
 		},
 	}
@@ -244,41 +275,6 @@ func TestUser_Write(t *testing.T) {
 				return
 			}
 		})
-	}
-}
-
-func TestUser_Write_update(t *testing.T) {
-	ud, err := usersd.New(Opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer ud.Close()
-
-	tx := ud.DB.NewTransaction(true)
-	defer tx.Discard()
-	index := ud.Index["users"]
-
-	usersFixtures(t, tx, index)
-
-	user, err := usersd.GetUser(tx, "admin")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	user.Email = "admin@test.com"
-
-	if err = user.Write(tx, index); err != nil {
-		t.Errorf("Can't write to the user -> %v", err)
-	}
-
-	newUser, err := usersd.GetUser(tx, "admin")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if newUser.Email != user.Email {
-		t.Errorf("Update failed, got %v,  wants %v", newUser.Email, user.Email)
 	}
 }
 
