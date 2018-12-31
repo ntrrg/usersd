@@ -26,19 +26,18 @@ const (
 type User struct {
 	ID        string `json:"id"`
 	Mode      string `json:"mode"`
+	Email     string `json:"email"`
+	Phone     string `json:"phone"`
 	Password  string `json:"password,omitempty"`
 	CreatedAt int64  `json:"createdAt"`
 	LastLogin int64  `json:"lastLogin"`
 
-	Email          string `json:"email"`
-	EmailVerified  bool   `json:"emailVerified"`
-
-	Phone          string `json:"phone"`
-	PhoneVerified  bool   `json:"phoneVerified"`
-
 	Roles []string `json:"roles,omitempty"`
 
 	Data map[string]interface{} `json:"data,omitempty"`
+
+	EmailVerified bool `json:"emailVerified"`
+	PhoneVerified bool `json:"phoneVerified"`
 }
 
 // GetUser fetches a user with the given ID from the database.

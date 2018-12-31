@@ -35,6 +35,28 @@ type Index map[string]bleve.Index
 // 	return nil
 // }
 
+// closeDB closes the database and the search index. Returns an error if any.
+func (s *Service) closeDB() error {
+	if err := s.DB.Close(); err != nil {
+		return err
+	}
+
+	for key, index := range s.Index {
+		_, kvs, err := index.Advanced()
+		if err != nil {
+			return err
+		}
+
+		if err := kvs.Close(); err != nil {
+			return err
+		}
+
+		delete(s.Index, key)
+	}
+
+	return nil
+}
+
 // openDB opens/creates database and indexing directories. Return an error if
 // any.
 func (s *Service) openDB() (err error) {
@@ -68,28 +90,6 @@ func (s *Service) openDB() (err error) {
 	}
 
 	badger.SetLogger(badgerLogger)
-	return nil
-}
-
-// closeDB closes the database and the search index. Returns an error if any.
-func (s *Service) closeDB() error {
-	if err := s.DB.Close(); err != nil {
-		return err
-	}
-
-	for key, index := range s.Index {
-		_, kvs, err := index.Advanced()
-		if err != nil {
-			return err
-		}
-
-		if err := kvs.Close(); err != nil {
-			return err
-		}
-
-		delete(s.Index, key)
-	}
-
 	return nil
 }
 

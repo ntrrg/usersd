@@ -4,16 +4,19 @@
 package usersd
 
 import (
-	"errors"
 	"fmt"
 )
 
 // User errors.
 var (
-	ErrUserIDNotFound = errors.New("the given user ID doesn't exists")
+	ErrUserIDNotFound = ValidationError{
+		Code:    1,
+		Field:   "id",
+		Message: "the given user ID doesn't exists",
+	}
 
 	ErrUserIDCreation = ValidationError{
-		Code:    1,
+		Code:    2,
 		Field:   "id",
 		Message: "can't generate the user ID -> %s",
 	}

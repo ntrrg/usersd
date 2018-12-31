@@ -38,7 +38,7 @@ func TestErrors_Error(t *testing.T) {
 		usersd.ErrUserPasswordEmpty,
 	}
 
-	want := "the given user ID doesn't exists; "
+	want := "(id) the given user ID doesn't exists; "
 	want += "(email) the given email is empty; "
 	want += "(password) the given password is empty"
 

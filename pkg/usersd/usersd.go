@@ -12,6 +12,16 @@ var DefaultOptions = Options{
 	JWTSecret: "secret",
 }
 
+// Options are parameters for initializing a service.
+type Options struct {
+	// Database location, if an empty string is given, a temporary storage will
+	// be used.
+	Database string
+
+	// Secret for signing and verifying JWT.
+	JWTSecret string
+}
+
 // Service is an authentication and authorization service.
 type Service struct {
 	DB    *badger.DB
@@ -34,12 +44,6 @@ func New(opts Options) (*Service, error) {
 	return s, nil
 }
 
-// Start initialize the service (databases, search indexes, etc...). Returns an
-// error if any.
-func (s *Service) Start() error {
-	return s.openDB()
-}
-
 // Close terminates the service (databases, search indexes, etc...). Any error
 // closing the service will be stored at Service.err and will be accessible
 // from Service.Err().
@@ -57,12 +61,8 @@ func (s *Service) IsTemp() bool {
 	return s.opts.Database == ""
 }
 
-// Options are parameters for initializing a service.
-type Options struct {
-	// Database location, if an empty string is given, a temporary storage will
-	// be used.
-	Database string
-
-	// Secret for signing and verifying JWT.
-	JWTSecret string
+// Start initialize the service (databases, search indexes, etc...). Returns an
+// error if any.
+func (s *Service) Start() error {
+	return s.openDB()
 }

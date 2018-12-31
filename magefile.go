@@ -82,7 +82,7 @@ func CoverageFile() error {
 		return err
 	}
 
-	return sh.RunV("go", "test", "-race", "-coverprofile", coverageFile, "-v", "./...")
+	return sh.RunV("go", "test", "-race", "-coverprofile", coverageFile, "./...")
 }
 
 func (Docker) Debug() error {

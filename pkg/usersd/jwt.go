@@ -15,6 +15,22 @@ type Token struct {
 	User User `json:"user"`
 }
 
+// UnmarshalJWT parses the JWT and returns a Token if possible. Notice that
+// UnmarshalJWT doesn't verify the JWT signature.
+func UnmarshalJWT(token []byte) (*Token, error) {
+	payload, _, err := jwt.ParseBytes(token)
+	if err != nil {
+		return nil, err
+	}
+
+	jot := new(Token)
+	if err = jwt.Unmarshal(payload, jot); err != nil {
+		return nil, err
+	}
+
+	return jot, nil
+}
+
 // JWT generates a JWT for the given user. The JWT can't be used before
 // notBefore of after expire, for no limits use 0.
 func (s *Service) JWT(user *User, notBefore, expire int64) ([]byte, error) {
@@ -28,8 +44,8 @@ func (s *Service) JWT(user *User, notBefore, expire int64) ([]byte, error) {
 
 	jot := &Token{
 		JWT: &jwt.JWT{
-			Issuer:   "usersd",
-			Subject:  user.ID,
+			Issuer:  "usersd",
+			Subject: user.ID,
 
 			ExpirationTime: expire,
 			NotBefore:      notBefore,
@@ -53,22 +69,6 @@ func (s *Service) JWT(user *User, notBefore, expire int64) ([]byte, error) {
 // VerifyJWT returns true if the JWT was signed by the service.
 func (s *Service) VerifyJWT(token []byte) bool {
 	return VerifyJWT(s.opts.JWTSecret, token)
-}
-
-// UnmarshalJWT parses the JWT and returns a Token if possible. Notice that
-// UnmarshalJWT doesn't verify the JWT signature.
-func UnmarshalJWT(token []byte) (*Token, error) {
-	payload, _, err := jwt.ParseBytes(token)
-	if err != nil {
-		return nil, err
-	}
-
-	jot := new(Token)
-	if err = jwt.Unmarshal(payload, jot); err != nil {
-		return nil, err
-	}
-
-	return jot, nil
 }
 
 // VerifyJWT returns true if the JWT was signed with the given secret.

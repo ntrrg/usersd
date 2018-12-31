@@ -105,7 +105,7 @@ func TestUser_CheckPassword(t *testing.T) {
 	defer tx.Discard()
 	index := ud.Index["users"]
 
-	user := &usersd.User {
+	user := &usersd.User{
 		ID:       "test",
 		Email:    "test@example.com",
 		Password: "1234",
@@ -115,7 +115,7 @@ func TestUser_CheckPassword(t *testing.T) {
 		t.Error(err)
 	}
 
-	if ! user.CheckPassword("1234") {
+	if !user.CheckPassword("1234") {
 		t.Error("Invalid password")
 	}
 
@@ -183,7 +183,7 @@ func TestUser_Write(t *testing.T) {
 		user *usersd.User
 	}{
 		{
-			name:     "Regular",
+			name: "Regular",
 			user: &usersd.User{
 				Email:    "john@example.com",
 				Password: "1234",
@@ -191,7 +191,7 @@ func TestUser_Write(t *testing.T) {
 		},
 
 		{
-			name:     "ExtraData",
+			name: "ExtraData",
 			user: &usersd.User{
 				ID:       "test",
 				Email:    "john2@example.com",
@@ -204,24 +204,24 @@ func TestUser_Write(t *testing.T) {
 		},
 
 		{
-			name:     "EmptyEmail",
-			fail:     true,
+			name: "EmptyEmail",
+			fail: true,
 			user: &usersd.User{
 				Password: "1234",
 			},
 		},
 
 		{
-			name:  "EmptyPassword",
-			fail:  true,
+			name: "EmptyPassword",
+			fail: true,
 			user: &usersd.User{
 				Email: "john@example.com",
 			},
 		},
 
 		{
-			name:     "ExistentUser",
-			fail:     true,
+			name: "ExistentUser",
+			fail: true,
 			user: &usersd.User{
 				Email:    "john@example.com",
 				Password: "1234",
@@ -283,7 +283,7 @@ func TestUser_Write_update(t *testing.T) {
 }
 
 func usersFixtures(t *testing.T, tx *badger.Txn, index bleve.Index) {
-	users := []*usersd.User {
+	users := []*usersd.User{
 		{
 			ID:       "admin",
 			Email:    "admin@example.com",
