@@ -8,7 +8,9 @@ import (
 )
 
 // DefaultOptions are the commonly used options for a simple Init call.
-var DefaultOptions = Options{}
+var DefaultOptions = Options{
+	JWTSecret: "secret",
+}
 
 // Service is an authentication and authorization service.
 type Service struct {
@@ -60,4 +62,7 @@ type Options struct {
 	// Database location, if an empty string is given, a temporary storage will
 	// be used.
 	Database string
+
+	// Secret for signing and verifying JWT.
+	JWTSecret string
 }

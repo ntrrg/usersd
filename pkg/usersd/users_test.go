@@ -189,6 +189,39 @@ func TestNewUser(t *testing.T) { // nolint: gocyclo
 	}
 }
 
+func TestUser_CheckPassword(t *testing.T) {
+	ud, err := usersd.New(Opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer ud.Close()
+
+	tx := ud.DB.NewTransaction(false)
+	defer tx.Discard()
+	index := ud.Index["users"]
+
+	user := &usersd.User {
+		ID:       "test",
+		Email:    "test@example.com",
+		Password: "1234",
+	}
+
+	if err := user.Validate(tx, index); err != nil {
+		t.Error(err)
+	}
+
+	if ! user.CheckPassword("1234") {
+		t.Error("Invalid password")
+	}
+
+	user.Password = ""
+
+	if user.CheckPassword("1234") {
+		t.Error("Empty password pass the check")
+	}
+}
+
 func TestUser_Delete(t *testing.T) {
 	ud, err := usersd.New(Opts)
 	if err != nil {

@@ -32,6 +32,8 @@ type User struct {
 	CreatedAt int64  `json:"createdAt"`
 	LastLogin int64  `json:"lastLogin"`
 
+	Roles []string `json:"roles,omitempty"`
+
 	Data map[string]interface{} `json:"data,omitempty"`
 }
 
@@ -106,6 +108,17 @@ func NewUser(tx *badger.Txn, index bleve.Index, id, email, password string, data
 	}
 
 	return u, nil
+}
+
+// CheckPassword compares the given password with the user password and returns
+// true if match.
+func (u *User) CheckPassword(password string) bool {
+	if u.Password == "" {
+		return false
+	}
+
+	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
+	return err == nil
 }
 
 // Delete removes the user from the database.
