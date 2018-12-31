@@ -25,12 +25,16 @@ const (
 // User is an entity that may be authenticated and authorized.
 type User struct {
 	ID        string `json:"id"`
-	Email     string `json:"email"`
 	Mode      string `json:"mode"`
 	Password  string `json:"password,omitempty"`
-	Verified  bool   `json:"verified"`
 	CreatedAt int64  `json:"createdAt"`
 	LastLogin int64  `json:"lastLogin"`
+
+	Email          string `json:"email"`
+	EmailVerified  bool   `json:"emailVerified"`
+
+	Phone          string `json:"phone"`
+	PhoneVerified  bool   `json:"phoneVerified"`
 
 	Roles []string `json:"roles,omitempty"`
 
@@ -143,8 +147,10 @@ func (u *User) Validate(tx *badger.Txn, index bleve.Index) error {
 		userIDValidator,
 		userModeValidator,
 		userEmailValidator,
-		userVerifiedValidator,
+		userEmailVerifiedValidator,
 		userPasswordValidator,
+		userPhoneValidator,
+		userPhoneVerifiedValidator,
 		userCreatedAtValidator,
 		userLastLoginValidator,
 	}
@@ -225,7 +231,7 @@ func userIDValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) e
 }
 
 func userModeValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
-	if user.Mode == "" || user.Verified {
+	if user.Mode == "" || user.EmailVerified || user.PhoneVerified {
 		user.Mode = defaultUserMode
 	}
 
@@ -240,7 +246,7 @@ func userEmailValidator(tx *badger.Txn, index bleve.Index, user *User, old *User
 	q := `+email:"` + user.Email + `"`
 
 	if old != nil {
-		q = `-id:"` + user.ID + `" ` + q
+		q = `-id:"` + old.ID + `" ` + q
 	}
 
 	users, err := GetUsers(tx, index, q)
@@ -251,9 +257,36 @@ func userEmailValidator(tx *badger.Txn, index bleve.Index, user *User, old *User
 	return nil
 }
 
-func userVerifiedValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
+func userEmailVerifiedValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
 	if old == nil || user.Email != old.Email {
-		user.Verified = false
+		user.EmailVerified = false
+	}
+
+	return nil
+}
+
+func userPhoneValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
+	if user.Phone == "" {
+		return nil
+	}
+
+	q := `+phone:"` + user.Phone + `"`
+
+	if old != nil {
+		q = `-id:"` + old.ID + `" ` + q
+	}
+
+	users, err := GetUsers(tx, index, q)
+	if err == nil && len(users) > 0 {
+		return ErrUserPhoneExists
+	}
+
+	return nil
+}
+
+func userPhoneVerifiedValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
+	if old == nil || user.Phone != old.Phone {
+		user.PhoneVerified = false
 	}
 
 	return nil

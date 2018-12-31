@@ -30,14 +30,20 @@ var (
 		Message: "the given email already exists",
 	}
 
-	ErrUserPasswordEmpty = ValidationError{
+	ErrUserPhoneExists = ValidationError{
 		Code:    20,
+		Field:   "phone",
+		Message: "the given phone already exists",
+	}
+
+	ErrUserPasswordEmpty = ValidationError{
+		Code:    30,
 		Field:   "password",
 		Message: "the given password is empty",
 	}
 
 	ErrUserPasswordHash = ValidationError{
-		Code:    21,
+		Code:    31,
 		Field:   "password",
 		Message: "can't encrypt the password -> %s",
 	}
