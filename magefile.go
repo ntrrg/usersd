@@ -91,7 +91,7 @@ func (Docker) Debug() error {
 
 type Docs mg.Namespace
 
-func (Docs) Ref() {
+func (Docs) Default() {
 	sh.RunV("godoc", "-http", ":6060", "-play")
 }
 
