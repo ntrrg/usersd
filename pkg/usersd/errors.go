@@ -9,81 +9,81 @@ import (
 
 // User errors.
 var (
-	ErrUserIDNotFound = ValidationError{
+	ErrUserIDNotFound = Error{
 		Code:    1,
 		Field:   "id",
 		Message: "the given user ID doesn't exists",
 	}
 
-	ErrUserIDCreation = ValidationError{
+	ErrUserIDCreation = Error{
 		Code:    2,
 		Field:   "id",
 		Message: "can't generate the user ID -> %s",
 	}
 
-	ErrUserEmailEmpty = ValidationError{
+	ErrUserEmailEmpty = Error{
 		Code:    10,
 		Field:   "email",
 		Message: "the given email is empty",
 	}
 
-	ErrUserEmailInvalid = ValidationError{
+	ErrUserEmailInvalid = Error{
 		Code:    11,
 		Field:   "email",
 		Message: "the given email is invalid",
 	}
 
-	ErrUserEmailExists = ValidationError{
+	ErrUserEmailExists = Error{
 		Code:    12,
 		Field:   "email",
 		Message: "the given email already exists",
 	}
 
-	ErrUserPhoneEmpty = ValidationError{
+	ErrUserPhoneEmpty = Error{
 		Code:    20,
 		Field:   "phone",
 		Message: "the given phone is empty",
 	}
 
-	ErrUserPhoneInvalid = ValidationError{
+	ErrUserPhoneInvalid = Error{
 		Code:    21,
 		Field:   "phone",
 		Message: "the given phone is invalid",
 	}
 
-	ErrUserPhoneExists = ValidationError{
+	ErrUserPhoneExists = Error{
 		Code:    22,
 		Field:   "phone",
 		Message: "the given phone already exists",
 	}
 
-	ErrUserPasswordEmpty = ValidationError{
+	ErrUserPasswordEmpty = Error{
 		Code:    30,
 		Field:   "password",
 		Message: "the given password is empty",
 	}
 
-	ErrUserPasswordHash = ValidationError{
+	ErrUserPasswordHash = Error{
 		Code:    31,
 		Field:   "password",
 		Message: "can't encrypt the password -> %s",
 	}
 )
 
-// ValidationError is an error after validating an entity field.
-type ValidationError struct {
+// Error is a more descriptive error.
+type Error struct {
 	Code    int    `json:"code"`
 	Field   string `json:"field"`
 	Message string `json:"message"`
 }
 
 // Error implements error.
-func (e ValidationError) Error() string {
+func (e Error) Error() string {
 	return fmt.Sprintf("(%s) %s", e.Field, e.Message)
 }
 
 // Format returns a new error with a formated message.
-func (e ValidationError) Format(args ...interface{}) error {
+func (e Error) Format(args ...interface{}) error {
 	e.Message = fmt.Sprintf(e.Message, args...)
 	return e
 }

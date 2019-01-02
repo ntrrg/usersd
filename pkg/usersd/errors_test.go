@@ -10,7 +10,7 @@ import (
 	"github.com/ntrrg/usersd/pkg/usersd"
 )
 
-func TestValidationError_Error(t *testing.T) {
+func TestError_Error(t *testing.T) {
 	err := usersd.ErrUserPasswordEmpty
 	want := fmt.Sprintf("(%s) %s", err.Field, err.Message)
 	got := err.Error()
@@ -20,7 +20,7 @@ func TestValidationError_Error(t *testing.T) {
 	}
 }
 
-func TestValidationError_Format(t *testing.T) {
+func TestError_Format(t *testing.T) {
 	err := usersd.ErrUserPasswordHash
 	extra := "Invalid input"
 	want := fmt.Sprintf("(%s) %s", err.Field, fmt.Sprintf(err.Message, extra))
