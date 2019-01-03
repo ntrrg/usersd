@@ -168,6 +168,47 @@ func (u *User) Write(tx *Tx) error {
 	return tx.Index.Index(u.ID, u)
 }
 
+// GetUser is a helper method for GetUser.
+func (s *Service) GetUser(id string) (*User, error) {
+	tx := s.NewTx(false)
+	defer tx.Discard()
+	return GetUser(tx, id)
+}
+
+// GetUsers is a helper method for GetUsers.
+func (s *Service) GetUsers(q string, sort ...string) ([]*User, error) {
+	tx := s.NewTx(false)
+	defer tx.Discard()
+	return GetUsers(tx, q, sort...)
+}
+
+// DeleteUser is a helper method for User.Delete.
+func (s *Service) DeleteUser(id string) error {
+	user := &User{ID: id}
+	tx := s.NewTx(true)
+	defer tx.Discard()
+
+	if err := user.Delete(tx); err != nil {
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+// WriteUser is a helper method for User.Write.
+func (s *Service) WriteUser(user *User) error {
+	tx := s.NewTx(true)
+	defer tx.Discard()
+
+	if err := user.Write(tx); err != nil {
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
 func getAllUsers(tx *Tx) ([]*User, error) {
 	var users []*User
 

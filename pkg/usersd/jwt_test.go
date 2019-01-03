@@ -30,7 +30,7 @@ func TestUnmarshalJWT(t *testing.T) {
 }
 
 func TestService_JWT(t *testing.T) {
-	ud, err := usersd.New(Opts)
+	ud, err := usersd.New(usersd.DefaultOptions)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func TestService_JWT(t *testing.T) {
 }
 
 func TestService_VerifyJWT(t *testing.T) {
-	ud, err := usersd.New(Opts)
+	ud, err := usersd.New(usersd.DefaultOptions)
 	if err != nil {
 		t.Fatal(err)
 	}
