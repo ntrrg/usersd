@@ -119,11 +119,10 @@ func openIndex(dir string) (bleve.Index, error) {
 	return index, nil
 }
 
-// BL is a Badger logger.
-type BL struct{}
+type bl struct{}
 
-func (l *BL) Errorf(f string, v ...interface{})   {}
-func (l *BL) Infof(f string, v ...interface{})    {}
-func (l *BL) Warningf(f string, v ...interface{}) {}
+func (l *bl) Errorf(f string, v ...interface{})   {}
+func (l *bl) Infof(f string, v ...interface{})    {}
+func (l *bl) Warningf(f string, v ...interface{}) {}
 
-var badgerLogger = &BL{}
+var badgerLogger = &bl{}
