@@ -34,11 +34,10 @@ func UnmarshalJWT(token []byte) (*Token, error) {
 // JWT generates a JWT for the given user. The JWT can't be used before
 // notBefore of after expire, for no limits use 0.
 func (s *Service) JWT(user *User, notBefore, expire int64) ([]byte, error) {
-	tx := s.DB.NewTransaction(false)
+	tx := s.NewTx(false)
 	defer tx.Discard()
-	index := s.Index["users"]
 
-	if err := user.Validate(tx, index); err != nil {
+	if err := user.Validate(tx); err != nil {
 		return nil, err
 	}
 

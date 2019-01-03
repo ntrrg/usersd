@@ -6,9 +6,6 @@ package usersd_test
 import (
 	"testing"
 
-	"github.com/blevesearch/bleve"
-	"github.com/dgraph-io/badger"
-
 	"github.com/ntrrg/usersd/pkg/usersd"
 )
 
@@ -22,11 +19,10 @@ func TestGetUser(t *testing.T) {
 
 	defer ud.Close()
 
-	tx := ud.DB.NewTransaction(true)
+	tx := ud.NewTx(true)
 	defer tx.Discard()
-	index := ud.Index["users"]
 
-	usersFixtures(t, tx, index)
+	usersFixtures(t, tx)
 
 	user, err := usersd.GetUser(tx, "admin")
 	if err != nil {
@@ -50,11 +46,10 @@ func TestGetUsers(t *testing.T) {
 
 	defer ud.Close()
 
-	tx := ud.DB.NewTransaction(true)
+	tx := ud.NewTx(true)
 	defer tx.Discard()
-	index := ud.Index["users"]
 
-	usersFixtures(t, tx, index)
+	usersFixtures(t, tx)
 
 	cases := []struct {
 		name string
@@ -81,7 +76,7 @@ func TestGetUsers(t *testing.T) {
 		c := c
 
 		t.Run(c.name, func(t *testing.T) {
-			users, err := usersd.GetUsers(tx, index, c.q, c.sort...)
+			users, err := usersd.GetUsers(tx, c.q, c.sort...)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -101,9 +96,8 @@ func TestUser_CheckPassword(t *testing.T) {
 
 	defer ud.Close()
 
-	tx := ud.DB.NewTransaction(false)
+	tx := ud.NewTx(false)
 	defer tx.Discard()
-	index := ud.Index["users"]
 
 	user := &usersd.User{
 		ID:       "test",
@@ -111,7 +105,7 @@ func TestUser_CheckPassword(t *testing.T) {
 		Password: "1234",
 	}
 
-	if err := user.Validate(tx, index); err != nil {
+	if err := user.Validate(tx); err != nil {
 		t.Error(err)
 	}
 
@@ -134,13 +128,12 @@ func TestUser_Delete(t *testing.T) {
 
 	defer ud.Close()
 
-	tx := ud.DB.NewTransaction(true)
+	tx := ud.NewTx(true)
 	defer tx.Discard()
-	index := ud.Index["users"]
 
-	usersFixtures(t, tx, index)
+	usersFixtures(t, tx)
 
-	users, err := usersd.GetUsers(tx, index, "")
+	users, err := usersd.GetUsers(tx, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,12 +143,12 @@ func TestUser_Delete(t *testing.T) {
 	}
 
 	for _, user := range users {
-		if err = user.Delete(tx, index); err != nil {
+		if err = user.Delete(tx); err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	users, err = usersd.GetUsers(tx, index, "")
+	users, err = usersd.GetUsers(tx, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,9 +166,8 @@ func TestUser_Write(t *testing.T) {
 
 	defer ud.Close()
 
-	tx := ud.DB.NewTransaction(true)
+	tx := ud.NewTx(true)
 	defer tx.Discard()
-	index := ud.Index["users"]
 
 	cases := []struct {
 		name string
@@ -264,7 +256,7 @@ func TestUser_Write(t *testing.T) {
 		c := c
 
 		t.Run(c.name, func(t *testing.T) {
-			err := c.user.Write(tx, index)
+			err := c.user.Write(tx)
 
 			switch {
 			case err != nil && !c.fail:
@@ -278,7 +270,7 @@ func TestUser_Write(t *testing.T) {
 	}
 }
 
-func usersFixtures(t *testing.T, tx *badger.Txn, index bleve.Index) {
+func usersFixtures(t *testing.T, tx *usersd.Tx) {
 	users := []*usersd.User{
 		{
 			ID:       "admin",
@@ -303,7 +295,7 @@ func usersFixtures(t *testing.T, tx *badger.Txn, index bleve.Index) {
 	}
 
 	for _, user := range users {
-		if err := user.Write(tx, index); err != nil {
+		if err := user.Write(tx); err != nil {
 			t.Fatal(err)
 		}
 	}

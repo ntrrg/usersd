@@ -30,8 +30,6 @@ type User struct {
 	CreatedAt int64  `json:"createdAt"`
 	LastLogin int64  `json:"lastLogin"`
 
-	Roles []string `json:"roles,omitempty"`
-
 	Data map[string]interface{} `json:"data,omitempty"`
 
 	EmailVerified bool `json:"emailVerified"`
@@ -39,7 +37,7 @@ type User struct {
 }
 
 // GetUser fetches a user with the given ID from the database.
-func GetUser(tx *badger.Txn, id string) (*User, error) {
+func GetUser(tx *Tx, id string) (*User, error) {
 	item, err := tx.Get([]byte(dbKeyPrefixUsers + id))
 	if err == badger.ErrKeyNotFound {
 		return nil, ErrUserIDNotFound
@@ -61,7 +59,7 @@ func GetUser(tx *badger.Txn, id string) (*User, error) {
 }
 
 // GetUsers fetches users that satisfies the given constraints.
-func GetUsers(tx *badger.Txn, index bleve.Index, q string, sort ...string) ([]*User, error) { // nolint: lll
+func GetUsers(tx *Tx, q string, sort ...string) ([]*User, error) {
 	if q == "" && len(sort) == 0 {
 		return getAllUsers(tx)
 	}
@@ -81,7 +79,7 @@ func GetUsers(tx *badger.Txn, index bleve.Index, q string, sort ...string) ([]*U
 	req := bleve.NewSearchRequest(bq)
 	req.SortBy(sort)
 
-	res, err := index.Search(req)
+	res, err := tx.Index.Search(req)
 	if err != nil {
 		return nil, err
 	}
@@ -110,16 +108,16 @@ func (u *User) CheckPassword(password string) bool {
 }
 
 // Delete removes the user from the database.
-func (u *User) Delete(tx *badger.Txn, index bleve.Index) error {
+func (u *User) Delete(tx *Tx) error {
 	if err := tx.Delete([]byte(dbKeyPrefixUsers + u.ID)); err != nil {
 		return err
 	}
 
-	return index.Delete(u.ID)
+	return tx.Index.Delete(u.ID)
 }
 
 // Validate checks the user data and returns any errors.
-func (u *User) Validate(tx *badger.Txn, index bleve.Index) error {
+func (u *User) Validate(tx *Tx) error {
 	old, err := GetUser(tx, u.ID)
 	if err != nil && err != ErrUserIDNotFound {
 		return err
@@ -127,7 +125,7 @@ func (u *User) Validate(tx *badger.Txn, index bleve.Index) error {
 
 	errors := Errors{}
 
-	rules := []func(tx *badger.Txn, index bleve.Index, user *User, old *User) error{ // nolint: lll
+	rules := []func(tx *Tx, user *User, old *User) error{
 		userIDValidator,
 		userEmailValidator,
 		userEmailVerifiedValidator,
@@ -140,7 +138,7 @@ func (u *User) Validate(tx *badger.Txn, index bleve.Index) error {
 	}
 
 	for _, f := range rules {
-		if err := f(tx, index, u, old); err != nil {
+		if err := f(tx, u, old); err != nil {
 			errors = append(errors, err)
 		}
 	}
@@ -153,8 +151,8 @@ func (u *User) Validate(tx *badger.Txn, index bleve.Index) error {
 }
 
 // Write writes the user data to the database.
-func (u *User) Write(tx *badger.Txn, index bleve.Index) error { // nolint: lll
-	if err := u.Validate(tx, index); err != nil {
+func (u *User) Write(tx *Tx) error {
+	if err := u.Validate(tx); err != nil {
 		return err
 	}
 
@@ -167,10 +165,10 @@ func (u *User) Write(tx *badger.Txn, index bleve.Index) error { // nolint: lll
 		return err
 	}
 
-	return index.Index(u.ID, u)
+	return tx.Index.Index(u.ID, u)
 }
 
-func getAllUsers(tx *badger.Txn) ([]*User, error) {
+func getAllUsers(tx *Tx) ([]*User, error) {
 	var users []*User
 
 	it := tx.NewIterator(badger.DefaultIteratorOptions)

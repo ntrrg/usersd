@@ -4,6 +4,7 @@
 package usersd
 
 import (
+	"github.com/blevesearch/bleve"
 	"github.com/dgraph-io/badger"
 )
 
@@ -24,11 +25,10 @@ type Options struct {
 
 // Service is an authentication and authorization service.
 type Service struct {
-	DB    *badger.DB
-	Index Index
-
-	opts Options
-	err  error
+	opts  Options
+	err   error
+	db    *badger.DB
+	index bleve.Index
 }
 
 // New creates and starts a service. Receives an Options instance as argument

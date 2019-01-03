@@ -5,20 +5,16 @@ package usersd
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 
 	"github.com/blevesearch/bleve"
 	"github.com/dgraph-io/badger"
 )
 
-// Index is a collection of Bleve search indexes.
-type Index map[string]bleve.Index
-
 // Backup writes a database backup to the given io.Writer. Returns an error if
 // any.
 // func (s *Service) Backup(w io.Writer) error {
-// 	if _, err := s.DB.Backup(w, 0); err != nil {
+// 	if _, err := s.db.Backup(w, 0); err != nil {
 // 		return err
 // 	}
 //
@@ -28,44 +24,45 @@ type Index map[string]bleve.Index
 // Restore reads a database backup from the given io.Reader. Returns an error
 // if any.
 // func (s *Service) Restore(r io.Reader) error {
-// 	if err := s.DB.Load(r); err != nil {
+// 	if err := s.db.Load(r); err != nil {
 // 		return err
 // 	}
 //
 // 	return nil
 // }
 
+// Tx wraps a badger.Txn and a bleve.Index.
+type Tx struct {
+	*badger.Txn
+	Index bleve.Index
+}
+
+// NewTx creates a database transaction. If writable is true, the database will
+// allow modifications.
+func (s *Service) NewTx(writable bool) *Tx {
+	return &Tx{
+		Txn:   s.db.NewTransaction(writable),
+		Index: s.index,
+	}
+}
+
 // closeDB closes the database and the search index. Returns an error if any.
 func (s *Service) closeDB() error {
-	if err := s.DB.Close(); err != nil {
+	if err := s.db.Close(); err != nil {
 		return err
 	}
 
-	for key, index := range s.Index {
-		_, kvs, err := index.Advanced()
-		if err != nil {
-			return err
-		}
-
-		if err := kvs.Close(); err != nil {
-			return err
-		}
-
-		delete(s.Index, key)
+	_, kvs, err := s.index.Advanced()
+	if err != nil {
+		return err
 	}
 
-	return nil
+	return kvs.Close()
 }
 
 // openDB opens/creates database and indexing directories. Return an error if
 // any.
 func (s *Service) openDB() (err error) {
-	defer func() {
-		if err != nil {
-			s.err = s.closeDB()
-		}
-	}()
-
 	dir := s.opts.Database
 	if dir == "" {
 		if dir, err = ioutil.TempDir("", "usersd"); err != nil {
@@ -73,23 +70,17 @@ func (s *Service) openDB() (err error) {
 		}
 	}
 
-	if s.DB, err = openDB(dir + "/data"); err != nil {
+	badger.SetLogger(badgerLogger)
+
+	if s.db, err = openDB(dir + "/data"); err != nil {
 		return err
 	}
 
-	s.Index = make(Index)
-
-	indexes := []string{
-		"users",
+	if s.index, err = openIndex(dir + "/search"); err != nil {
+		s.err = s.closeDB()
+		return err
 	}
 
-	for _, name := range indexes {
-		if s.Index[name], err = openIndex(dir + "/search/" + name); err != nil {
-			return err
-		}
-	}
-
-	badger.SetLogger(badgerLogger)
 	return nil
 }
 
@@ -128,22 +119,11 @@ func openIndex(dir string) (bleve.Index, error) {
 	return index, nil
 }
 
-// Badger logger
+// BL is a Badger logger.
+type BL struct{}
 
-type bL struct {
-	*log.Logger
-}
+func (l *BL) Errorf(f string, v ...interface{})   {}
+func (l *BL) Infof(f string, v ...interface{})    {}
+func (l *BL) Warningf(f string, v ...interface{}) {}
 
-func (l *bL) Errorf(f string, v ...interface{}) {
-	l.Printf(f, v...)
-}
-
-func (l *bL) Infof(f string, v ...interface{}) {
-	l.Printf(f, v...)
-}
-
-func (l *bL) Warningf(f string, v ...interface{}) {
-	l.Printf(f, v...)
-}
-
-var badgerLogger = &bL{Logger: log.New(ioutil.Discard, "", log.LstdFlags)}
+var badgerLogger = &BL{}

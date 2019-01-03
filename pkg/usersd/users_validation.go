@@ -7,8 +7,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/blevesearch/bleve"
-	"github.com/dgraph-io/badger"
 	"github.com/gofrs/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -18,7 +16,7 @@ var (
 	emailRegexp = regexp.MustCompile(`^[a-zA-Z0-9.!#$%&'*+\/=?^_` + "`" + `{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$`) // nolint: lll
 )
 
-func userCreatedAtValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
+func userCreatedAtValidator(tx *Tx, user *User, old *User) error {
 	if old == nil {
 		user.CreatedAt = time.Now().Unix()
 	} else {
@@ -28,7 +26,7 @@ func userCreatedAtValidator(tx *badger.Txn, index bleve.Index, user *User, old *
 	return nil
 }
 
-func userIDValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
+func userIDValidator(tx *Tx, user *User, old *User) error {
 	if user.ID == "" {
 		x, err := uuid.NewV4()
 		if err != nil {
@@ -41,7 +39,7 @@ func userIDValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) e
 	return nil
 }
 
-func userEmailValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
+func userEmailValidator(tx *Tx, user *User, old *User) error {
 	if user.Email == "" {
 		return nil
 	}
@@ -56,7 +54,7 @@ func userEmailValidator(tx *badger.Txn, index bleve.Index, user *User, old *User
 		q = `-id:"` + old.ID + `" ` + q
 	}
 
-	users, err := GetUsers(tx, index, q)
+	users, err := GetUsers(tx, q)
 	if err == nil && len(users) > 0 {
 		return ErrUserEmailExists
 	}
@@ -64,7 +62,7 @@ func userEmailValidator(tx *badger.Txn, index bleve.Index, user *User, old *User
 	return nil
 }
 
-func userEmailVerifiedValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
+func userEmailVerifiedValidator(tx *Tx, user *User, old *User) error {
 	if old == nil || user.Email != old.Email {
 		user.EmailVerified = false
 	}
@@ -72,7 +70,7 @@ func userEmailVerifiedValidator(tx *badger.Txn, index bleve.Index, user *User, o
 	return nil
 }
 
-func userLastLoginValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
+func userLastLoginValidator(tx *Tx, user *User, old *User) error {
 	if old == nil {
 		user.LastLogin = 0
 	}
@@ -80,7 +78,7 @@ func userLastLoginValidator(tx *badger.Txn, index bleve.Index, user *User, old *
 	return nil
 }
 
-func userModeValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
+func userModeValidator(tx *Tx, user *User, old *User) error {
 	if user.Mode == "" || user.EmailVerified || user.PhoneVerified {
 		user.Mode = defaultUserMode
 	}
@@ -88,7 +86,7 @@ func userModeValidator(tx *badger.Txn, index bleve.Index, user *User, old *User)
 	return nil
 }
 
-func userPasswordValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
+func userPasswordValidator(tx *Tx, user *User, old *User) error {
 	if user.Mode == defaultUserMode && user.Password == "" {
 		return ErrUserPasswordEmpty
 	} else if user.Mode != defaultUserMode && user.Password == "" {
@@ -110,7 +108,7 @@ func userPasswordValidator(tx *badger.Txn, index bleve.Index, user *User, old *U
 	return nil
 }
 
-func userPhoneValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
+func userPhoneValidator(tx *Tx, user *User, old *User) error {
 	if user.Phone == "" {
 		return nil
 	}
@@ -121,7 +119,7 @@ func userPhoneValidator(tx *badger.Txn, index bleve.Index, user *User, old *User
 		q = `-id:"` + old.ID + `" ` + q
 	}
 
-	users, err := GetUsers(tx, index, q)
+	users, err := GetUsers(tx, q)
 	if err == nil && len(users) > 0 {
 		return ErrUserPhoneExists
 	}
@@ -129,7 +127,7 @@ func userPhoneValidator(tx *badger.Txn, index bleve.Index, user *User, old *User
 	return nil
 }
 
-func userPhoneVerifiedValidator(tx *badger.Txn, index bleve.Index, user *User, old *User) error { // nolint: lll
+func userPhoneVerifiedValidator(tx *Tx, user *User, old *User) error {
 	if old == nil || user.Phone != old.Phone {
 		user.PhoneVerified = false
 	}
