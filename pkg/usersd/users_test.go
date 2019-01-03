@@ -353,6 +353,8 @@ func TestService_DeleteUser(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	defer ud.Close()
+
 	tx := ud.NewTx(true)
 	defer tx.Discard()
 
@@ -361,30 +363,25 @@ func TestService_DeleteUser(t *testing.T) {
 
 	users, err := ud.GetUsers("")
 	if err != nil {
-		ud.Close()
 		t.Fatal(err)
 	}
 
 	if len(users) == 0 {
-		ud.Close()
 		t.Fatal("No users created")
 	}
 
 	for _, user := range users {
 		if err = ud.DeleteUser(user.ID); err != nil {
-			ud.Close()
 			t.Fatal(err)
 		}
 	}
 
 	users, err = ud.GetUsers("")
 	if err != nil {
-		ud.Close()
 		t.Fatal(err)
 	}
 
 	if len(users) != 0 {
-		ud.Close()
 		t.Error("The database keeps users even after deleting all of them")
 	}
 

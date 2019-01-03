@@ -5,8 +5,6 @@ package usersd_test
 
 import (
 	"testing"
-
-	"github.com/ntrrg/usersd/pkg/usersd"
 )
 
 // TODO: Test backup creation.

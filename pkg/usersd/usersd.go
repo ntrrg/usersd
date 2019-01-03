@@ -29,6 +29,8 @@ type Service struct {
 	err   error
 	db    *badger.DB
 	index bleve.Index
+
+	closed  bool
 }
 
 // New creates and starts a service. Receives an Options instance as argument
@@ -48,7 +50,12 @@ func New(opts Options) (*Service, error) {
 // closing the service will be stored at Service.err and will be accessible
 // from Service.Err().
 func (s *Service) Close() {
+	if s.closed {
+		return
+	}
+
 	s.err = s.closeDB()
+	s.closed = true
 }
 
 // Err checks if any error occurred during some processes (closing, etc...).
