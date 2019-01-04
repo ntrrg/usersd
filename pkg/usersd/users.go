@@ -38,6 +38,14 @@ type User struct {
 
 // GetUser fetches a user with the given ID from the database.
 func GetUser(tx *Tx, id string) (*User, error) {
+	if id == "" {
+		return nil, ErrUserIDNotFound
+	}
+
+	defer func() {
+		recover() // nolint: errcheck
+	}()
+
 	item, err := tx.Get([]byte(dbKeyPrefixUsers + id))
 	if err == badger.ErrKeyNotFound {
 		return nil, ErrUserIDNotFound
@@ -192,8 +200,7 @@ func (s *Service) DeleteUser(id string) error {
 		return err
 	}
 
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 // WriteUser is a helper method for User.Write.
@@ -205,8 +212,7 @@ func (s *Service) WriteUser(user *User) error {
 		return err
 	}
 
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func getAllUsers(tx *Tx) ([]*User, error) {

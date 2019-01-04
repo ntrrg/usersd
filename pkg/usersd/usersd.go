@@ -30,7 +30,7 @@ type Service struct {
 	db    *badger.DB
 	index bleve.Index
 
-	closed  bool
+	closed bool
 }
 
 // New creates and starts a service. Receives an Options instance as argument

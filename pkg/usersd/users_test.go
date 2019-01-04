@@ -36,6 +36,42 @@ func TestGetUser(t *testing.T) {
 	}
 }
 
+func TestGetUser_discartedTx(t *testing.T) {
+	ud, err := usersd.New(usersd.DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer ud.Close()
+
+	tx := ud.NewTx(false)
+	tx.Discard()
+
+	if _, err = usersd.GetUser(tx, "admin"); err == nil {
+		t.Fatal("Getting user with discarted transaction")
+	}
+}
+
+func TestGetUser_malformedData(t *testing.T) {
+	ud, err := usersd.New(usersd.DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer ud.Close()
+
+	tx := ud.NewTx(true)
+	defer tx.Discard()
+
+	if err = tx.Set([]byte("users-admin"), []byte{1, 2}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = usersd.GetUser(tx, "admin"); err == nil {
+		t.Fatal("Getting user with malformed data")
+	}
+}
+
 func TestGetUsers(t *testing.T) {
 	ud, err := usersd.New(usersd.DefaultOptions)
 	if err != nil {
@@ -83,6 +119,64 @@ func TestGetUsers(t *testing.T) {
 				t.Errorf("GetUsers(%v, %v) gets invalid data -> %v", c.q, c.sort, users)
 			}
 		})
+	}
+}
+
+func TestGetUsers_closedIndex(t *testing.T) {
+	ud, err := usersd.New(usersd.DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ud.Close()
+
+	tx := ud.NewTx(false)
+	defer tx.Discard()
+
+	if _, err = usersd.GetUsers(tx, "any query"); err == nil {
+		t.Error("Getting users with a closed search index")
+	}
+}
+
+func TestGetUsers_outdatedIndex(t *testing.T) {
+	ud, err := usersd.New(usersd.DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer ud.Close()
+
+	tx := ud.NewTx(true)
+	defer tx.Discard()
+
+	usersFixtures(t, tx)
+
+	if err = tx.Delete([]byte("users-admin")); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = usersd.GetUsers(tx, `id:"admin"`); err == nil {
+		t.Error("Getting users with a closed search index")
+	}
+}
+
+func TestGetUsers_malformedData(t *testing.T) {
+	ud, err := usersd.New(usersd.DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer ud.Close()
+
+	tx := ud.NewTx(true)
+	defer tx.Discard()
+
+	if err = tx.Set([]byte("users-admin"), []byte{1, 2}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = usersd.GetUsers(tx, ""); err == nil {
+		t.Error("Getting users with malformed data")
 	}
 }
 
@@ -153,6 +247,42 @@ func TestUser_Delete(t *testing.T) {
 
 	if len(users) != 0 {
 		t.Error("The database keeps users even after deleting all of them")
+	}
+}
+
+func TestUser_Delete_discartedTx(t *testing.T) {
+	ud, err := usersd.New(usersd.DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer ud.Close()
+
+	tx := ud.NewTx(true)
+	tx.Discard()
+
+	user := &usersd.User{ID: "test"}
+
+	if err = user.Delete(tx); err == nil {
+		t.Error("Removing user with discarted transaction")
+	}
+}
+
+func TestUser_Delete_roTx(t *testing.T) {
+	ud, err := usersd.New(usersd.DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer ud.Close()
+
+	tx := ud.NewTx(false)
+	defer tx.Discard()
+
+	user := &usersd.User{ID: "test"}
+
+	if err = user.Delete(tx); err == nil {
+		t.Error("Removing user with read-only transaction")
 	}
 }
 
@@ -268,6 +398,42 @@ func TestUser_Write(t *testing.T) {
 	}
 }
 
+func TestUser_Write_discartedTx(t *testing.T) {
+	ud, err := usersd.New(usersd.DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer ud.Close()
+
+	tx := ud.NewTx(true)
+	tx.Discard()
+
+	user := &usersd.User{}
+
+	if err = user.Write(tx); err == nil {
+		t.Error("Writing user with discarted transaction")
+	}
+}
+
+func TestUser_Write_roTx(t *testing.T) {
+	ud, err := usersd.New(usersd.DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer ud.Close()
+
+	tx := ud.NewTx(false)
+	defer tx.Discard()
+
+	user := &usersd.User{Password: "1234"}
+
+	if err = user.Write(tx); err == nil {
+		t.Error("Writing user with read-only transaction")
+	}
+}
+
 func TestService_GetUser(t *testing.T) {
 	ud, err := usersd.New(usersd.DefaultOptions)
 	if err != nil {
@@ -280,19 +446,13 @@ func TestService_GetUser(t *testing.T) {
 	defer tx.Discard()
 
 	usersFixtures(t, tx)
-	tx.Commit()
 
-	user, err := ud.GetUser("admin")
-	if err != nil {
+	if err = tx.Commit(); err != nil {
 		t.Fatal(err)
 	}
 
-	if user.Email != "admin@example.com" {
-		t.Errorf("GetUser(admin).Email == %v, wants admin@example.com", user.Email)
-	}
-
-	if user.Mode != "local" {
-		t.Errorf("GetUser(admin).Mode == %v, wants local", user.Mode)
+	if _, err := ud.GetUser("admin"); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -308,42 +468,18 @@ func TestService_GetUsers(t *testing.T) {
 	defer tx.Discard()
 
 	usersFixtures(t, tx)
-	tx.Commit()
 
-	cases := []struct {
-		name string
-		q    string
-		sort []string
-		want int
-	}{
-		{name: "All", want: 3},
-
-		{
-			name: "AllSorted",
-			want: 3,
-			sort: []string{"-email"},
-		},
-
-		{
-			name: "ByEmail",
-			want: 1,
-			q:    `email:"john@example.com"`,
-		},
+	if err = tx.Commit(); err != nil {
+		t.Fatal(err)
 	}
 
-	for _, c := range cases {
-		c := c
+	users, err := ud.GetUsers("")
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		t.Run(c.name, func(t *testing.T) {
-			users, err := ud.GetUsers(c.q, c.sort...)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if len(users) != c.want {
-				t.Errorf("GetUsers(%v, %v) gets invalid data -> %v", c.q, c.sort, users)
-			}
-		})
+	if len(users) == 0 {
+		t.Error("0 usersd fetched")
 	}
 }
 
@@ -359,35 +495,18 @@ func TestService_DeleteUser(t *testing.T) {
 	defer tx.Discard()
 
 	usersFixtures(t, tx)
-	tx.Commit()
 
-	users, err := ud.GetUsers("")
-	if err != nil {
+	if err = tx.Commit(); err != nil {
 		t.Fatal(err)
 	}
 
-	if len(users) == 0 {
-		t.Fatal("No users created")
-	}
-
-	for _, user := range users {
-		if err = ud.DeleteUser(user.ID); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	users, err = ud.GetUsers("")
-	if err != nil {
+	if err = ud.DeleteUser("admin"); err != nil {
 		t.Fatal(err)
-	}
-
-	if len(users) != 0 {
-		t.Error("The database keeps users even after deleting all of them")
 	}
 
 	ud.Close()
 
-	if err := ud.DeleteUser("invalid ID"); err == nil {
+	if err := ud.DeleteUser("admin"); err == nil {
 		t.Error("Deletion works without database")
 	}
 }
@@ -400,104 +519,16 @@ func TestService_WriteUser(t *testing.T) {
 
 	defer ud.Close()
 
-	cases := []struct {
-		name string
-		fail bool
-		user *usersd.User
-	}{
-		{
-			name: "Regular",
-			user: &usersd.User{
-				Password: "1234",
-			},
-		},
+	user := &usersd.User{Password: "1234"}
 
-		{
-			name: "ExtraData",
-			user: &usersd.User{
-				ID:       "test",
-				Email:    "john@example.com",
-				Phone:    "+12345678901",
-				Password: "1234",
-				Data: map[string]interface{}{
-					"username": "john",
-					"name":     "John Doe",
-				},
-			},
-		},
-
-		{
-			name: "EmptyPassword",
-			fail: true,
-			user: &usersd.User{},
-		},
-
-		{
-			name: "OAuth2",
-			user: &usersd.User{
-				Mode:  "oauth2",
-				Email: "test@gmail.com",
-			},
-		},
-
-		{
-			name: "InvalidEmail",
-			fail: true,
-			user: &usersd.User{
-				Email:    "johnexample.com",
-				Password: "1234",
-			},
-		},
-
-		{
-			name: "ExistentEmail",
-			fail: true,
-			user: &usersd.User{
-				Email:    "john@example.com",
-				Password: "1234",
-			},
-		},
-
-		{
-			name: "ExistentPhone",
-			fail: true,
-			user: &usersd.User{
-				Phone:    "+12345678901",
-				Password: "1234",
-			},
-		},
-
-		{
-			name: "Update",
-			user: &usersd.User{
-				ID:       "test",
-				Email:    "john@example.com",
-				Phone:    "+12345678901",
-				Password: "1234",
-				Data: map[string]interface{}{
-					"username": "john",
-					"name":     "John Doe",
-					"age":      26,
-				},
-			},
-		},
+	if err = ud.WriteUser(user); err != nil {
+		t.Fatal(err)
 	}
 
-	for _, c := range cases {
-		c := c
+	ud.Close()
 
-		t.Run(c.name, func(t *testing.T) {
-			err := ud.WriteUser(c.user)
-
-			switch {
-			case err != nil && !c.fail:
-				t.Fatal(err)
-			case err == nil && c.fail:
-				t.Fatal("User created")
-			case err != nil && c.fail:
-				return
-			}
-		})
+	if err = ud.WriteUser(user); err == nil {
+		t.Error("Writing works without database")
 	}
 }
 
