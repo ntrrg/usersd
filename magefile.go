@@ -52,7 +52,7 @@ var (
 )
 
 func Benchmark() error {
-	return sh.RunV("go", "test", "-race", "-bench", ".", "-benchmem", "./...")
+	return sh.RunV("go", "test", "-bench", ".", "-benchmem", "./...")
 }
 
 func CI() {
