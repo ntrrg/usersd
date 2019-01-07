@@ -79,7 +79,7 @@ type Error struct {
 
 // Error implements error.
 func (e Error) Error() string {
-	return fmt.Sprintf("(%s) %s", e.Field, e.Message)
+	return fmt.Sprintf("(%d) %s: %s", e.Code, e.Field, e.Message)
 }
 
 // Format returns a new error with a formated message.

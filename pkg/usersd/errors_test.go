@@ -12,7 +12,7 @@ import (
 
 func TestError_Error(t *testing.T) {
 	err := usersd.ErrUserPasswordEmpty
-	want := fmt.Sprintf("(%s) %s", err.Field, err.Message)
+	want := fmt.Sprintf("(%d) %s: %s", err.Code, err.Field, err.Message)
 	got := err.Error()
 
 	if got != want {
@@ -23,7 +23,12 @@ func TestError_Error(t *testing.T) {
 func TestError_Format(t *testing.T) {
 	err := usersd.ErrUserPasswordHash
 	extra := "Invalid input"
-	want := fmt.Sprintf("(%s) %s", err.Field, fmt.Sprintf(err.Message, extra))
+
+	want := fmt.Sprintf(
+		"(%d) %s: %s",
+		err.Code, err.Field, fmt.Sprintf(err.Message, extra),
+	)
+
 	got := err.Format(extra).Error()
 
 	if got != want {
@@ -38,9 +43,9 @@ func TestErrors_Error(t *testing.T) {
 		usersd.ErrUserPasswordEmpty,
 	}
 
-	want := "(id) the given user ID doesn't exists; "
-	want += "(email) the given email is empty; "
-	want += "(password) the given password is empty"
+	want := "(1) id: the given user ID doesn't exists; "
+	want += "(10) email: the given email is empty; "
+	want += "(30) password: the given password is empty"
 
 	got := err.Error()
 
