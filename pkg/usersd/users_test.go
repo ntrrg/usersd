@@ -63,7 +63,7 @@ func TestGetUser_malformedData(t *testing.T) {
 	tx := ud.NewTx(true)
 	defer tx.Discard()
 
-	if err = tx.Set([]byte("users-admin"), []byte{1, 2}); err != nil {
+	if err = tx.Set([]byte(usersd.UsersDT+"admin"), []byte{1, 2}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -88,21 +88,20 @@ func TestGetUsers(t *testing.T) {
 	cases := []struct {
 		name string
 		q    string
-		sort []string
 		want int
 	}{
 		{name: "All", want: 3},
 
 		{
-			name: "AllSorted",
-			want: 3,
-			sort: []string{"-email"},
+			name: "ByEmail",
+			want: 1,
+			q:    `+email:john@example.com`,
 		},
 
 		{
-			name: "ByEmail",
+			name: "ByExtraData",
 			want: 1,
-			q:    `email:"john@example.com"`,
+			q:    `+data.name:"John Doe"`,
 		},
 	}
 
@@ -110,31 +109,46 @@ func TestGetUsers(t *testing.T) {
 		c := c
 
 		t.Run(c.name, func(t *testing.T) {
-			users, err := usersd.GetUsers(tx, c.q, c.sort...)
+			users, err := usersd.GetUsers(tx, c.q)
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			if len(users) != c.want {
-				t.Errorf("GetUsers(%v, %v) gets invalid data -> %v", c.q, c.sort, users)
+				t.Errorf("GetUsers(%v) gets invalid data -> %v", c.q, users)
 			}
 		})
 	}
 }
 
-func TestGetUsers_closedIndex(t *testing.T) {
+func TestGetUsers_sorted(t *testing.T) {
 	ud, err := usersd.New(usersd.DefaultOptions)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ud.Close()
+	defer ud.Close()
 
-	tx := ud.NewTx(false)
+	tx := ud.NewTx(true)
 	defer tx.Discard()
 
-	if _, err = usersd.GetUsers(tx, "any query"); err == nil {
-		t.Error("Getting users with a closed search index")
+	usersFixtures(t, tx)
+
+	users, err := usersd.GetUsers(tx, "", "-email")
+	if err != nil {
+		t.Fatal("Can't fetch the users")
+	}
+
+	emails := []string{
+		"john@example.com",
+		"john2@example.com",
+		"admin@example.com",
+	}
+
+	for i, email := range emails {
+		if email != users[i].Email {
+			t.Errorf("Bad order: %q - %q", email, users[i].Email)
+		}
 	}
 }
 
@@ -151,12 +165,12 @@ func TestGetUsers_outdatedIndex(t *testing.T) {
 
 	usersFixtures(t, tx)
 
-	if err = tx.Delete([]byte("users-admin")); err != nil {
+	if err = tx.Delete([]byte(usersd.UsersDT+"admin")); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err = usersd.GetUsers(tx, `id:"admin"`); err == nil {
-		t.Error("Getting users with a closed search index")
+	if _, err = usersd.GetUsers(tx, "+id:admin"); err == nil {
+		t.Error("Getting users with an outdated search index")
 	}
 }
 
@@ -171,7 +185,7 @@ func TestGetUsers_malformedData(t *testing.T) {
 	tx := ud.NewTx(true)
 	defer tx.Discard()
 
-	if err = tx.Set([]byte("users-admin"), []byte{1, 2}); err != nil {
+	if err = tx.Set([]byte(usersd.UsersDT+"admin"), []byte{1, 2}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -503,12 +517,6 @@ func TestService_DeleteUser(t *testing.T) {
 	if err = ud.DeleteUser("admin"); err != nil {
 		t.Fatal(err)
 	}
-
-	ud.Close()
-
-	if err := ud.DeleteUser("admin"); err == nil {
-		t.Error("Deletion works without database")
-	}
 }
 
 func TestService_WriteUser(t *testing.T) {
@@ -523,12 +531,6 @@ func TestService_WriteUser(t *testing.T) {
 
 	if err = ud.WriteUser(user); err != nil {
 		t.Fatal(err)
-	}
-
-	ud.Close()
-
-	if err = ud.WriteUser(user); err == nil {
-		t.Error("Writing works without database")
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/blevesearch/bleve"
+	"github.com/blevesearch/bleve/analysis/analyzer/keyword"
 	"github.com/dgraph-io/badger"
 )
 
@@ -106,9 +107,24 @@ func openDB(dir string) (*badger.DB, error) {
 func openIndex(dir string) (bleve.Index, error) {
 	index, err := bleve.Open(dir)
 	if err == bleve.Error(1) { // ErrorIndexPathDoesNotExist
-		mapping := bleve.NewIndexMapping()
-		index, err = bleve.New(dir, mapping)
+		keywordField := bleve.NewTextFieldMapping()
+		keywordField.Analyzer = keyword.Name
 
+		disabledField := bleve.NewDocumentDisabledMapping()
+
+		users := bleve.NewDocumentMapping()
+		users.AddFieldMappingsAt("documenttype", keywordField)
+		users.AddFieldMappingsAt("id", keywordField)
+		users.AddFieldMappingsAt("mode", keywordField)
+		users.AddFieldMappingsAt("email", keywordField)
+		users.AddFieldMappingsAt("phone", keywordField)
+		users.AddSubDocumentMapping("password", disabledField)
+
+		mapping := bleve.NewIndexMapping()
+		mapping.AddDocumentMapping(UsersDT, users)
+		mapping.TypeField = "documenttype"
+
+		index, err = bleve.New(dir, mapping)
 		if err != nil {
 			return nil, err
 		}

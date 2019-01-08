@@ -12,8 +12,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// UsersDT indentifies users documents in the database and the search index.
+const UsersDT = "users"
+
 const (
-	dbKeyPrefixUsers = "users-"
 	defaultUserMode  = "local"
 
 	// Password hashing strength.
@@ -42,11 +44,7 @@ func GetUser(tx *Tx, id string) (*User, error) {
 		return nil, ErrUserIDNotFound
 	}
 
-	defer func() {
-		recover() // nolint: errcheck
-	}()
-
-	item, err := tx.Get([]byte(dbKeyPrefixUsers + id))
+	item, err := tx.Get([]byte(UsersDT + id))
 	if err == badger.ErrKeyNotFound {
 		return nil, ErrUserIDNotFound
 	} else if err != nil {
@@ -79,7 +77,7 @@ func GetUsers(tx *Tx, q string, sort ...string) ([]*User, error) {
 	)
 
 	if q != "" {
-		bq = bleve.NewQueryStringQuery(q)
+		bq = bleve.NewQueryStringQuery(q + " +documenttype:" + UsersDT)
 	} else {
 		bq = bleve.NewMatchAllQuery()
 	}
@@ -117,7 +115,7 @@ func (u *User) CheckPassword(password string) bool {
 
 // Delete removes the user from the database.
 func (u *User) Delete(tx *Tx) error {
-	if err := tx.Delete([]byte(dbKeyPrefixUsers + u.ID)); err != nil {
+	if err := tx.Delete([]byte(UsersDT + u.ID)); err != nil {
 		return err
 	}
 
@@ -164,16 +162,22 @@ func (u *User) Write(tx *Tx) error {
 		return err
 	}
 
-	v, err := json.Marshal(u)
+	data, err := json.Marshal(u)
 	if err != nil {
 		return err
 	}
 
-	if err := tx.Set([]byte(dbKeyPrefixUsers+u.ID), v); err != nil {
+	if err := tx.Set([]byte(UsersDT+u.ID), data); err != nil {
 		return err
 	}
 
-	return tx.Index.Index(u.ID, u)
+	v := make(map[string]interface{})
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+
+	v["documenttype"] = UsersDT
+	return tx.Index.Index(u.ID, v)
 }
 
 // GetUser is a helper method for GetUser.
@@ -224,7 +228,7 @@ func getAllUsers(tx *Tx) ([]*User, error) {
 	var (
 		v []byte
 
-		prefix = []byte(dbKeyPrefixUsers)
+		prefix = []byte(UsersDT)
 	)
 
 	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
