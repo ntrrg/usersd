@@ -37,15 +37,13 @@ func TestService_JWT(t *testing.T) {
 
 	defer ud.Close()
 
-	user := new(usersd.User)
-
+	user := &usersd.User{Email: "asd"}
 	if _, err = ud.JWT(user, 0, 0); err == nil {
 		t.Error("JWT generated for invalid user")
 	}
 
 	user.ID = "test"
 	user.Email = "test@example.com"
-	user.Password = "some bcrypt hash"
 
 	if _, err = ud.JWT(user, 0, 0); err != nil {
 		t.Errorf("Can't generate the JWT -> %v", err)

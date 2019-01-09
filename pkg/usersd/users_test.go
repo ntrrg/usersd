@@ -63,7 +63,7 @@ func TestGetUser_malformedData(t *testing.T) {
 	tx := ud.NewTx(true)
 	defer tx.Discard()
 
-	if err = tx.Set([]byte(usersd.UsersDT+"admin"), []byte{1, 2}); err != nil {
+	if err = tx.Set([]byte("usersadmin"), []byte{1, 2}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -165,7 +165,7 @@ func TestGetUsers_outdatedIndex(t *testing.T) {
 
 	usersFixtures(t, tx)
 
-	if err = tx.Delete([]byte(usersd.UsersDT+"admin")); err != nil {
+	if err = tx.Delete([]byte("usersadmin")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -185,44 +185,12 @@ func TestGetUsers_malformedData(t *testing.T) {
 	tx := ud.NewTx(true)
 	defer tx.Discard()
 
-	if err = tx.Set([]byte(usersd.UsersDT+"admin"), []byte{1, 2}); err != nil {
+	if err = tx.Set([]byte("usersadmin"), []byte{1, 2}); err != nil {
 		t.Fatal(err)
 	}
 
 	if _, err = usersd.GetUsers(tx, ""); err == nil {
 		t.Error("Getting users with malformed data")
-	}
-}
-
-func TestUser_CheckPassword(t *testing.T) {
-	ud, err := usersd.New(usersd.DefaultOptions)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer ud.Close()
-
-	tx := ud.NewTx(false)
-	defer tx.Discard()
-
-	user := &usersd.User{
-		ID:       "test",
-		Email:    "test@example.com",
-		Password: "1234",
-	}
-
-	if err := user.Validate(tx); err != nil {
-		t.Error(err)
-	}
-
-	if !user.CheckPassword("1234") {
-		t.Error("Invalid password")
-	}
-
-	user.Password = ""
-
-	if user.CheckPassword("1234") {
-		t.Error("Empty password pass the check")
 	}
 }
 
@@ -317,19 +285,16 @@ func TestUser_Write(t *testing.T) {
 		user *usersd.User
 	}{
 		{
-			name: "Regular",
-			user: &usersd.User{
-				Password: "1234",
-			},
+			name: "Simple",
+			user: new(usersd.User),
 		},
 
 		{
 			name: "ExtraData",
 			user: &usersd.User{
-				ID:       "test",
-				Email:    "john@example.com",
-				Phone:    "+12345678901",
-				Password: "1234",
+				ID:    "test",
+				Email: "john@example.com",
+				Phone: "+12345678901",
 				Data: map[string]interface{}{
 					"username": "john",
 					"name":     "John Doe",
@@ -338,53 +303,29 @@ func TestUser_Write(t *testing.T) {
 		},
 
 		{
-			name: "EmptyPassword",
-			fail: true,
-			user: &usersd.User{},
-		},
-
-		{
-			name: "OAuth2",
-			user: &usersd.User{
-				Mode:  "oauth2",
-				Email: "test@gmail.com",
-			},
-		},
-
-		{
 			name: "InvalidEmail",
 			fail: true,
-			user: &usersd.User{
-				Email:    "johnexample.com",
-				Password: "1234",
-			},
+			user: &usersd.User{Email: "johnexample.com"},
 		},
 
 		{
 			name: "ExistentEmail",
 			fail: true,
-			user: &usersd.User{
-				Email:    "john@example.com",
-				Password: "1234",
-			},
+			user: &usersd.User{Email: "john@example.com"},
 		},
 
 		{
 			name: "ExistentPhone",
 			fail: true,
-			user: &usersd.User{
-				Phone:    "+12345678901",
-				Password: "1234",
-			},
+			user: &usersd.User{Phone: "+12345678901"},
 		},
 
 		{
 			name: "Update",
 			user: &usersd.User{
-				ID:       "test",
-				Email:    "john@example.com",
-				Phone:    "+12345678901",
-				Password: "1234",
+				ID:    "test",
+				Email: "john@example.com",
+				Phone: "+12345678901",
 				Data: map[string]interface{}{
 					"username": "john",
 					"name":     "John Doe",
@@ -441,8 +382,7 @@ func TestUser_Write_roTx(t *testing.T) {
 	tx := ud.NewTx(false)
 	defer tx.Discard()
 
-	user := &usersd.User{Password: "1234"}
-
+	user := new(usersd.User)
 	if err = user.Write(tx); err == nil {
 		t.Error("Writing user with read-only transaction")
 	}
@@ -527,8 +467,7 @@ func TestService_WriteUser(t *testing.T) {
 
 	defer ud.Close()
 
-	user := &usersd.User{Password: "1234"}
-
+	user := new(usersd.User)
 	if err = ud.WriteUser(user); err != nil {
 		t.Fatal(err)
 	}
@@ -537,20 +476,17 @@ func TestService_WriteUser(t *testing.T) {
 func usersFixtures(t *testing.T, tx *usersd.Tx) {
 	users := []*usersd.User{
 		{
-			ID:       "admin",
-			Email:    "admin@example.com",
-			Password: "admin",
+			ID:    "admin",
+			Email: "admin@example.com",
 		},
 
 		{
-			Email:    "john@example.com",
-			Phone:    "+12345678901",
-			Password: "1234",
+			Email: "john@example.com",
+			Phone: "+12345678901",
 		},
 
 		{
-			Email:    "john2@example.com",
-			Password: "1234",
+			Email: "john2@example.com",
 			Data: map[string]interface{}{
 				"username": "john",
 				"name":     "John Doe",

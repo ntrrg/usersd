@@ -4,6 +4,8 @@
 package usersd
 
 import (
+	"runtime"
+
 	"github.com/blevesearch/bleve"
 	"github.com/dgraph-io/badger"
 )
@@ -11,6 +13,13 @@ import (
 // DefaultOptions are the commonly used options for a simple Init call.
 var DefaultOptions = Options{
 	JWTSecret: "secret",
+	PasswdOpts: PasswordOptions{
+		SaltSize: 32,
+		Time:     1,
+		Memory:   64 * 1024,
+		Threads:  byte(runtime.GOMAXPROCS(0)),
+		HashSize: 32,
+	},
 }
 
 // Options are parameters for initializing a service.
@@ -18,6 +27,9 @@ type Options struct {
 	// Database location, if an empty string is given, a temporary storage will
 	// be used.
 	Database string
+
+	// Password hashing options.
+	PasswdOpts PasswordOptions
 
 	// Secret for signing and verifying JWT.
 	JWTSecret string

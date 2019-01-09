@@ -11,8 +11,8 @@ import (
 )
 
 func TestError_Error(t *testing.T) {
-	err := usersd.ErrUserPasswordEmpty
-	want := fmt.Sprintf("(%d) %s: %s", err.Code, err.Field, err.Message)
+	err := usersd.ErrUserIDNotFound
+	want := fmt.Sprintf("(%d) %s: %s", err.Code, err.Type, err.Message)
 	got := err.Error()
 
 	if got != want {
@@ -21,12 +21,12 @@ func TestError_Error(t *testing.T) {
 }
 
 func TestError_Format(t *testing.T) {
-	err := usersd.ErrUserPasswordHash
-	extra := "Invalid input"
+	err := usersd.ErrUserIDCreation
+	extra := "Something happen"
 
 	want := fmt.Sprintf(
 		"(%d) %s: %s",
-		err.Code, err.Field, fmt.Sprintf(err.Message, extra),
+		err.Code, err.Type, fmt.Sprintf(err.Message, extra),
 	)
 
 	got := err.Format(extra).Error()
@@ -40,17 +40,15 @@ func TestErrors_Error(t *testing.T) {
 	err := usersd.Errors{
 		usersd.ErrUserIDNotFound,
 		usersd.ErrUserEmailEmpty,
-		usersd.ErrUserPasswordEmpty,
 	}
 
 	want := "(1) id: the given user ID doesn't exists; "
-	want += "(10) email: the given email is empty; "
-	want += "(30) password: the given password is empty"
+	want += "(10) email: the given email is empty"
 
 	got := err.Error()
 
 	if got != want {
-		t.Errorf("Bad errors formating. Want: %v; got: %v", want, got)
+		t.Errorf("Bad errors formating.\n\twant: %v\n\tgot: %v", want, got)
 	}
 }
 

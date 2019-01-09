@@ -56,7 +56,6 @@ func (s *Service) JWT(user *User, notBefore, expire int64) ([]byte, error) {
 
 	hs256 := jwt.NewHS256(s.opts.JWTSecret)
 	jot.SetAlgorithm(hs256)
-	jot.User.Password = ""
 	payload, err := jwt.Marshal(jot)
 	if err != nil {
 		return nil, err

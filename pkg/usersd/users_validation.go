@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // Regular expressions
@@ -83,28 +82,6 @@ func userModeValidator(tx *Tx, user *User, old *User) error {
 		user.Mode = defaultUserMode
 	}
 
-	return nil
-}
-
-func userPasswordValidator(tx *Tx, user *User, old *User) error {
-	if user.Mode == defaultUserMode && user.Password == "" {
-		return ErrUserPasswordEmpty
-	} else if user.Mode != defaultUserMode && user.Password == "" {
-		return nil
-	}
-
-	password := user.Password
-
-	if _, err := bcrypt.Cost([]byte(password)); err == nil {
-		return nil
-	}
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
-	if err != nil {
-		return ErrUserPasswordHash.Format(err)
-	}
-
-	user.Password = string(hash)
 	return nil
 }
 

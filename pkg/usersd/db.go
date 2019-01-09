@@ -47,6 +47,16 @@ func (s *Service) NewTx(writable bool) *Tx {
 	}
 }
 
+// Get is a helper that fetch the data for the given key.
+func (tx *Tx) Get(key []byte) ([]byte, error) {
+	item, err := tx.Txn.Get(key)
+	if err != nil {
+		return nil, err
+	}
+
+	return item.ValueCopy(nil)
+}
+
 // closeDB closes the database and the search index. Returns an error if any.
 func (s *Service) closeDB() error {
 	if err := s.db.Close(); err != nil {
@@ -110,18 +120,15 @@ func openIndex(dir string) (bleve.Index, error) {
 		keywordField := bleve.NewTextFieldMapping()
 		keywordField.Analyzer = keyword.Name
 
-		disabledField := bleve.NewDocumentDisabledMapping()
-
 		users := bleve.NewDocumentMapping()
 		users.AddFieldMappingsAt("documenttype", keywordField)
 		users.AddFieldMappingsAt("id", keywordField)
 		users.AddFieldMappingsAt("mode", keywordField)
 		users.AddFieldMappingsAt("email", keywordField)
 		users.AddFieldMappingsAt("phone", keywordField)
-		users.AddSubDocumentMapping("password", disabledField)
 
 		mapping := bleve.NewIndexMapping()
-		mapping.AddDocumentMapping(UsersDT, users)
+		mapping.AddDocumentMapping(usersDI, users)
 		mapping.TypeField = "documenttype"
 
 		index, err = bleve.New(dir, mapping)
