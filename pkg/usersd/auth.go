@@ -30,32 +30,14 @@ type PasswordOptions struct {
 	HashSize uint32
 }
 
-// CheckPassword is a helper for Service.CheckPasswordTx.
+// CheckPassword compares the given password with the user password and returns
 // true if match.
-func (s *Service) CheckPassword(userid, password string) bool {
+func (s *Service) CheckPassword(tx *Tx, userid, password string) bool {
 	if password == "" {
 		return false
 	}
 
-	tx := s.NewTx(false)
-	defer tx.Discard()
-
-	user, err := GetUser(tx, userid)
-	if err != nil {
-		return false
-	}
-
-	return s.CheckPasswordTx(tx, user, password)
-}
-
-// CheckPasswordTx compares the given password with the user password and
-// returns true if match.
-func (s *Service) CheckPasswordTx(tx *Tx, user *User, password string) bool {
-	if password == "" {
-		return false
-	}
-
-	data, err := tx.Get([]byte(passwordsDI + user.ID))
+	data, err := tx.Get([]byte(passwordsDI + userid))
 	if err != nil {
 		return false
 	}
@@ -77,34 +59,14 @@ func (s *Service) CheckPasswordTx(tx *Tx, user *User, password string) bool {
 	return true
 }
 
-// SetPassword is a helper for Service.SetPasswordTx.
-func (s *Service) SetPassword(userid, password string) error {
+// SetPassword assigns password to the given user.
+func (s *Service) SetPassword(tx *Tx, userid, password string) error {
 	if password == "" {
 		return ErrPasswordEmpty
 	}
-
-	tx := s.NewTx(true)
-	defer tx.Discard()
 
 	user, err := GetUser(tx, userid)
 	if err != nil {
-		return err
-	}
-
-	if err := s.SetPasswordTx(tx, user, password); err != nil {
-		return err
-	}
-
-	return tx.Commit()
-}
-
-// SetPasswordTx assigns password to the given user.
-func (s *Service) SetPasswordTx(tx *Tx, user *User, password string) error {
-	if password == "" {
-		return ErrPasswordEmpty
-	}
-
-	if _, err := GetUser(tx, user.ID); err != nil {
 		return err
 	}
 
