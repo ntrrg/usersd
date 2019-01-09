@@ -12,7 +12,7 @@ import (
 
 func TestError_Error(t *testing.T) {
 	err := usersd.ErrUserIDNotFound
-	want := fmt.Sprintf("(%d) %s: %s", err.Code, err.Type, err.Message)
+	want := fmt.Sprintf("(%d) %s: %s", err.Code, err.Field, err.Message)
 	got := err.Error()
 
 	if got != want {
@@ -26,7 +26,7 @@ func TestError_Format(t *testing.T) {
 
 	want := fmt.Sprintf(
 		"(%d) %s: %s",
-		err.Code, err.Type, fmt.Sprintf(err.Message, extra),
+		err.Code, err.Field, fmt.Sprintf(err.Message, extra),
 	)
 
 	got := err.Format(extra).Error()

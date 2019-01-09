@@ -7,16 +7,76 @@ import (
 	"fmt"
 )
 
+// User errors.
+var (
+	ErrUserIDNotFound = Error{
+		Code:    1,
+		Field:   "id",
+		Message: "the given user ID doesn't exists",
+	}
+
+	ErrUserIDCreation = Error{
+		Code:    2,
+		Field:   "id",
+		Message: "can't generate the user ID -> %s",
+	}
+
+	ErrUserEmailEmpty = Error{
+		Code:    10,
+		Field:   "email",
+		Message: "the given email is empty",
+	}
+
+	ErrUserEmailInvalid = Error{
+		Code:    11,
+		Field:   "email",
+		Message: "the given email is invalid",
+	}
+
+	ErrUserEmailExists = Error{
+		Code:    12,
+		Field:   "email",
+		Message: "the given email already exists",
+	}
+
+	ErrUserPhoneEmpty = Error{
+		Code:    20,
+		Field:   "phone",
+		Message: "the given phone is empty",
+	}
+
+	ErrUserPhoneInvalid = Error{
+		Code:    21,
+		Field:   "phone",
+		Message: "the given phone is invalid",
+	}
+
+	ErrUserPhoneExists = Error{
+		Code:    22,
+		Field:   "phone",
+		Message: "the given phone already exists",
+	}
+)
+
+// Password errors.
+var (
+	ErrPasswordEmpty = Error{
+		Code:    50,
+		Field:   "password",
+		Message: "the given password is empty",
+	}
+)
+
 // Error is a more descriptive error.
 type Error struct {
 	Code    int    `json:"code"`
-	Type    string `json:"field"`
+	Field   string `json:"field"`
 	Message string `json:"message"`
 }
 
 // Error implements error.
 func (e Error) Error() string {
-	return fmt.Sprintf("(%d) %s: %s", e.Code, e.Type, e.Message)
+	return fmt.Sprintf("(%d) %s: %s", e.Code, e.Field, e.Message)
 }
 
 // Format returns a new error with a formated message.

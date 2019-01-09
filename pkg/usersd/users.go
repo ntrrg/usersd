@@ -16,57 +16,6 @@ const (
 	defaultUserMode = "local"
 )
 
-// User errors.
-var (
-	ErrUserIDNotFound = Error{
-		Code:    1,
-		Type:    "id",
-		Message: "the given user ID doesn't exists",
-	}
-
-	ErrUserIDCreation = Error{
-		Code:    2,
-		Type:    "id",
-		Message: "can't generate the user ID -> %s",
-	}
-
-	ErrUserEmailEmpty = Error{
-		Code:    10,
-		Type:    "email",
-		Message: "the given email is empty",
-	}
-
-	ErrUserEmailInvalid = Error{
-		Code:    11,
-		Type:    "email",
-		Message: "the given email is invalid",
-	}
-
-	ErrUserEmailExists = Error{
-		Code:    12,
-		Type:    "email",
-		Message: "the given email already exists",
-	}
-
-	ErrUserPhoneEmpty = Error{
-		Code:    20,
-		Type:    "phone",
-		Message: "the given phone is empty",
-	}
-
-	ErrUserPhoneInvalid = Error{
-		Code:    21,
-		Type:    "phone",
-		Message: "the given phone is invalid",
-	}
-
-	ErrUserPhoneExists = Error{
-		Code:    22,
-		Type:    "phone",
-		Message: "the given phone already exists",
-	}
-)
-
 // User is an entity that may be authenticated and authorized.
 type User struct {
 	ID        string `json:"id"`

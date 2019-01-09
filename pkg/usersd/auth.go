@@ -11,15 +11,6 @@ import (
 
 const passwordsDI = "passwords"
 
-// Password errors.
-var (
-	ErrPasswordEmpty = Error{
-		Code:    50,
-		Type:    "password",
-		Message: "the given password is empty",
-	}
-)
-
 // PasswordOptions wraps variables that control the passwords hashing algorithm
 // behavior.
 type PasswordOptions struct {
