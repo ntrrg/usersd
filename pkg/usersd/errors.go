@@ -9,10 +9,10 @@ import (
 
 // User errors.
 var (
-	ErrUserIDNotFound = Error{
+	ErrUserNotFound = Error{
 		Code:    1,
 		Field:   "id",
-		Message: "the given user ID doesn't exists",
+		Message: "the given user doesn't exists",
 	}
 
 	ErrUserIDCreation = Error{

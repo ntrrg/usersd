@@ -11,7 +11,7 @@ import (
 )
 
 func TestError_Error(t *testing.T) {
-	err := usersd.ErrUserIDNotFound
+	err := usersd.ErrUserNotFound
 	want := fmt.Sprintf("(%d) %s: %s", err.Code, err.Field, err.Message)
 	got := err.Error()
 
@@ -38,11 +38,11 @@ func TestError_Format(t *testing.T) {
 
 func TestErrors_Error(t *testing.T) {
 	err := usersd.Errors{
-		usersd.ErrUserIDNotFound,
+		usersd.ErrUserNotFound,
 		usersd.ErrUserEmailEmpty,
 	}
 
-	want := "(1) id: the given user ID doesn't exists; "
+	want := "(1) id: the given user doesn't exists; "
 	want += "(10) email: the given email is empty"
 
 	got := err.Error()

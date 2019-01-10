@@ -35,12 +35,12 @@ type User struct {
 // GetUser fetches a user with the given ID from the database.
 func GetUser(tx *Tx, id string) (*User, error) {
 	if id == "" {
-		return nil, ErrUserIDNotFound
+		return nil, ErrUserNotFound
 	}
 
 	data, err := tx.Get([]byte(usersDI + id))
 	if err == badger.ErrKeyNotFound {
-		return nil, ErrUserIDNotFound
+		return nil, ErrUserNotFound
 	} else if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func (u *User) Delete(tx *Tx) error {
 // Validate checks the user data and returns any errors.
 func (u *User) Validate(tx *Tx) error {
 	old, err := GetUser(tx, u.ID)
-	if err != nil && err != ErrUserIDNotFound {
+	if err != nil && err != ErrUserNotFound {
 		return err
 	}
 
