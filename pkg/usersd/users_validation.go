@@ -47,7 +47,7 @@ func userEmailValidator(tx *Tx, user *User, old *User) error {
 		return ErrUserEmailInvalid
 	}
 
-	q := "+email:" + user.Email
+	q := `+email:"` + user.Email + `"`
 
 	if old != nil {
 		q += " -id:" + old.ID
