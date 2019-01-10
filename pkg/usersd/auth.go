@@ -63,7 +63,9 @@ func (s *Service) SetPassword(tx *Tx, userid, password string) error {
 
 	opts := s.opts.PasswdOpts
 	salt := make([]byte, opts.SaltSize)
-	rand.Read(salt)
+	if _, err := rand.Read(salt); err != nil {
+		return err
+	}
 
 	hash := argon2.IDKey(
 		[]byte(password), salt,
