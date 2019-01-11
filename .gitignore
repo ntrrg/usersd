@@ -1,6 +1,6 @@
 *.sublime*
 *.sw[op]
-Session.vim
+*.vim
 nogit-*
 .DS_Store
 coverage.txt
