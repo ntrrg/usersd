@@ -32,18 +32,20 @@ import (
 // 	return nil
 // }
 
-// Tx wraps a badger.Txn and a bleve.Index.
+// Tx wraps a complete context for doing user operations.
 type Tx struct {
 	*badger.Txn
-	Index bleve.Index
+	Index   bleve.Index
+	Service *Service
 }
 
 // NewTx creates a database transaction. If writable is true, the database will
 // allow modifications.
 func (s *Service) NewTx(writable bool) *Tx {
 	return &Tx{
-		Txn:   s.db.NewTransaction(writable),
-		Index: s.index,
+		Txn:     s.db.NewTransaction(writable),
+		Index:   s.index,
+		Service: s,
 	}
 }
 

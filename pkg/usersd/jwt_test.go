@@ -16,20 +16,20 @@ func TestUnmarshalJWT(t *testing.T) {
 		t.Error("Invalid JWT parsed")
 	}
 
-	token = []byte("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ1c2Vyc2QiLCJzdWIiOiJ0ZXN0IiwiaWF0IjoxNTQ2MjI1MTk0LCJ1c2VyIjp7ImlkIjoxMjM0LCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJtb2RlIjoibG9jYWwiLCJ2ZXJpZmllZCI6ZmFsc2UsImNyZWF0ZWRBdCI6MTU0NjIyNTE5NCwibGFzdExvZ2luIjowfX0.OQrbnjdYk9glBP9i5OWhAdReOh_8i8zd5JJtcnOrfL0") //nolint: lll
+	token = []byte("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ1c2Vyc2QiLCJzdWIiOiJ0ZXN0IiwiaWF0IjoxNTQ2MjI1MTk0LCJ1c2VyIjp7ImlkIjoxMjM0LCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJtb2RlIjoibG9jYWwiLCJ2ZXJpZmllZCI6ZmFsc2UsImNyZWF0ZWRBdCI6MTU0NjIyNTE5NCwibGFzdExvZ2luIjowfX0.OQrbnjdYk9glBP9i5OWhAdReOh_8i8zd5JJtcnOrfL0") // nolint: lll
 
 	if _, err := usersd.UnmarshalJWT(token); err == nil {
 		t.Error("Invalid JWT unmarshaled")
 	}
 
-	token = []byte("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ1c2Vyc2QiLCJzdWIiOiJ0ZXN0IiwiaWF0IjoxNTQ2MjI1MTk0LCJ1c2VyIjp7ImlkIjoidGVzdCIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsIm1vZGUiOiJsb2NhbCIsInZlcmlmaWVkIjpmYWxzZSwiY3JlYXRlZEF0IjoxNTQ2MjI1MTk0LCJsYXN0TG9naW4iOjB9fQ.CE6an7tDnzsEsq2aexjln5uUuG5Rtju6ObDqgbTLDro") //nolint: lll
+	token = []byte("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ1c2Vyc2QiLCJzdWIiOiJ0ZXN0IiwiaWF0IjoxNTQ2MjI1MTk0LCJ1c2VyIjp7ImlkIjoidGVzdCIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsIm1vZGUiOiJsb2NhbCIsInZlcmlmaWVkIjpmYWxzZSwiY3JlYXRlZEF0IjoxNTQ2MjI1MTk0LCJsYXN0TG9naW4iOjB9fQ.CE6an7tDnzsEsq2aexjln5uUuG5Rtju6ObDqgbTLDro") // nolint: lll
 
 	if _, err := usersd.UnmarshalJWT(token); err != nil {
 		t.Errorf("Can't unmarshal valid JWT -> %v", err)
 	}
 }
 
-func TestService_JWT(t *testing.T) {
+func TestTx_JWT(t *testing.T) {
 	ud, err := usersd.New(usersd.DefaultOptions)
 	if err != nil {
 		t.Fatal(err)
@@ -37,20 +37,24 @@ func TestService_JWT(t *testing.T) {
 
 	defer ud.Close()
 
-	user := &usersd.User{Email: "asd"}
-	if _, err = ud.JWT(user, 0, 0); err == nil {
-		t.Error("JWT generated for invalid user")
+	tx := ud.NewTx(true)
+	defer tx.Discard()
+
+	if _, err = tx.JWT("non-existent-user", 0, 0); err == nil {
+		t.Error("JWT generated for non existent user")
 	}
 
-	user.ID = "test"
-	user.Email = "test@example.com"
+	user := new(usersd.User)
+	if err = user.Write(tx); err != nil {
+		t.Fatal(err)
+	}
 
-	if _, err = ud.JWT(user, 0, 0); err != nil {
+	if _, err = tx.JWT(user.ID, 0, 0); err != nil {
 		t.Errorf("Can't generate the JWT -> %v", err)
 	}
 }
 
-func TestService_VerifyJWT(t *testing.T) {
+func TestTx_VerifyJWT(t *testing.T) {
 	ud, err := usersd.New(usersd.DefaultOptions)
 	if err != nil {
 		t.Fatal(err)
@@ -58,23 +62,12 @@ func TestService_VerifyJWT(t *testing.T) {
 
 	defer ud.Close()
 
-	token := []byte("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ1c2Vyc2QiLCJzdWIiOiJ0ZXN0IiwiaWF0IjoxNTQ2MjI1MTk0LCJ1c2VyIjp7ImlkIjoidGVzdCIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsIm1vZGUiOiJsb2NhbCIsInZlcmlmaWVkIjpmYWxzZSwiY3JlYXRlZEF0IjoxNTQ2MjI1MTk0LCJsYXN0TG9naW4iOjB9fQ.CE6an7tDnzsEsq2aexjln5uUuG5Rtju6ObDqgbTLDro") //nolint: lll
+	tx := ud.NewTx(true)
+	defer tx.Discard()
 
-	if !ud.VerifyJWT(token) {
-		t.Error("Can't verify valid JWT")
-	}
-}
+	token := []byte("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ1c2Vyc2QiLCJzdWIiOiJ0ZXN0IiwiaWF0IjoxNTQ2MjI1MTk0LCJ1c2VyIjp7ImlkIjoidGVzdCIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsIm1vZGUiOiJsb2NhbCIsInZlcmlmaWVkIjpmYWxzZSwiY3JlYXRlZEF0IjoxNTQ2MjI1MTk0LCJsYXN0TG9naW4iOjB9fQ.CE6an7tDnzsEsq2aexjln5uUuG5Rtju6ObDqgbTLDro") // nolint: lll
 
-func TestVerifyJWT(t *testing.T) {
-	token := []byte("invalid jwt format")
-
-	if usersd.VerifyJWT("secret", token) {
-		t.Error("Invalid JWT parsed")
-	}
-
-	token = []byte("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ1c2Vyc2QiLCJzdWIiOiJ0ZXN0IiwiaWF0IjoxNTQ2MjI1MTk0LCJ1c2VyIjp7ImlkIjoidGVzdCIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsIm1vZGUiOiJsb2NhbCIsInZlcmlmaWVkIjpmYWxzZSwiY3JlYXRlZEF0IjoxNTQ2MjI1MTk0LCJsYXN0TG9naW4iOjB9fQ.CE6an7tDnzsEsq2aexjln5uUuG5Rtju6ObDqgbTLDro") //nolint: lll
-
-	if !usersd.VerifyJWT("secret", token) {
+	if !tx.VerifyJWT(token) {
 		t.Error("Can't verify valid JWT")
 	}
 }
