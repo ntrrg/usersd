@@ -9,6 +9,14 @@ import (
 	"github.com/gbrlsnchs/jwt/v2"
 )
 
+type JWTOptions struct {
+	// Issuer claim for JWTs.
+	Issuer string
+
+	// Secret for signing and verifying JWTs.
+	Secret string
+}
+
 // Token is a JWT token with public claims. See also:
 //
 // * Tx.JWT: ready to use JWT generation.
@@ -44,7 +52,7 @@ func (tx *Tx) JWT(userid string, notBefore, expire int64) ([]byte, error) {
 
 	jot := &Token{
 		JWT: &jwt.JWT{
-			Issuer:  "usersd",
+			Issuer:  tx.Service.opts.JWTOpts.Issuer,
 			Subject: user.ID,
 
 			ExpirationTime: expire,
@@ -55,7 +63,7 @@ func (tx *Tx) JWT(userid string, notBefore, expire int64) ([]byte, error) {
 		User: user,
 	}
 
-	hs256 := jwt.NewHS256(tx.Service.opts.JWTSecret)
+	hs256 := jwt.NewHS256(tx.Service.opts.JWTOpts.Secret)
 	jot.SetAlgorithm(hs256)
 	payload, err := jwt.Marshal(jot)
 	if err != nil {
@@ -67,13 +75,12 @@ func (tx *Tx) JWT(userid string, notBefore, expire int64) ([]byte, error) {
 
 // VerifyJWT returns true if the JWT was generated and signed by the service.
 func (tx *Tx) VerifyJWT(token []byte) bool {
-	secret := tx.Service.opts.JWTSecret
 	payload, sig, err := jwt.ParseBytes(token)
 	if err != nil {
 		return false
 	}
 
-	hs256 := jwt.NewHS256(secret)
+	hs256 := jwt.NewHS256(tx.Service.opts.JWTOpts.Secret)
 	err = hs256.Verify(payload, sig)
 	return err == nil
 }

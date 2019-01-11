@@ -12,13 +12,17 @@ import (
 
 // DefaultOptions are the commonly used options for a simple Init call.
 var DefaultOptions = Options{
-	JWTSecret: "secret",
 	PasswdOpts: PasswordOptions{
 		SaltSize: 32,
 		Time:     1,
 		Memory:   64 * 1024,
 		Threads:  byte(runtime.GOMAXPROCS(0)),
 		HashSize: 32,
+	},
+
+	JWTOpts: JWTOptions{
+		Issuer: "usersd",
+		Secret: "secret",
 	},
 }
 
@@ -28,11 +32,11 @@ type Options struct {
 	// be used.
 	Database string
 
-	// Password hashing options.
+	// Password authentication options.
 	PasswdOpts PasswordOptions
 
-	// Secret for signing and verifying JWT.
-	JWTSecret string
+	// JWT signing and verifying options.
+	JWTOpts JWTOptions
 }
 
 // Service is an authentication and authorization service.
