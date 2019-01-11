@@ -11,14 +11,12 @@ import (
 var (
 	ErrUserNotFound = Error{
 		Code:    1,
-		Field:   "id",
 		Message: "the given user doesn't exists",
 	}
 
 	ErrUserIDCreation = Error{
 		Code:    2,
-		Field:   "id",
-		Message: "can't generate the user ID -> %s",
+		Message: "can't generate a unique user ID -> %s",
 	}
 
 	ErrUserEmailEmpty = Error{
@@ -76,6 +74,10 @@ type Error struct {
 
 // Error implements error.
 func (e Error) Error() string {
+	if e.Field == "" {
+		return fmt.Sprintf("(%d) %s", e.Code, e.Message)
+	}
+
 	return fmt.Sprintf("(%d) %s: %s", e.Code, e.Field, e.Message)
 }
 
