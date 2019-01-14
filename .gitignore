@@ -5,7 +5,6 @@ nogit-*
 .DS_Store
 coverage.txt
 .screenrc
-pkg/usersd/test-db
 dist/
 *~
 vendor/github.com/blevesearch/go-porterstemmer/porterstemmer_has_suffix.go

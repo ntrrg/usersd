@@ -53,7 +53,7 @@ func userEmailValidator(tx *Tx, user *User, old *User) error {
 		q += " -id:" + old.ID
 	}
 
-	users, err := GetUsers(tx, q)
+	users, err := tx.GetUsers(q)
 	if err == nil && len(users) > 0 {
 		return ErrUserEmailExists
 	}
@@ -96,7 +96,7 @@ func userPhoneValidator(tx *Tx, user *User, old *User) error {
 		q += " -id:" + old.ID
 	}
 
-	users, err := GetUsers(tx, q)
+	users, err := tx.GetUsers(q)
 	if err == nil && len(users) > 0 {
 		return ErrUserPhoneExists
 	}

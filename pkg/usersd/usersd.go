@@ -10,7 +10,7 @@ import (
 	"github.com/dgraph-io/badger"
 )
 
-// DefaultOptions are the commonly used options for a simple Init call.
+// DefaultOptions are commonly used options for a simple Init call.
 var DefaultOptions = Options{
 	PasswdOpts: PasswordOptions{
 		SaltSize: 32,
@@ -28,8 +28,7 @@ var DefaultOptions = Options{
 
 // Options are parameters for initializing a service.
 type Options struct {
-	// Database location, if an empty string is given, a temporary storage will
-	// be used.
+	// Database location.
 	Database string
 
 	// Password authentication options.
@@ -42,18 +41,22 @@ type Options struct {
 // Service is an authentication and authorization service.
 type Service struct {
 	opts  Options
-	err   error
 	db    *badger.DB
 	index bleve.Index
 
-	closed bool
+	running bool
 }
 
-// New creates and starts a service. Receives an Options instance as argument
-// and returns a Service instance and an error if any.
+// Create creates a service, but doesn't initialize it.
+func Create(opts Options) *Service {
+	return &Service{
+		opts: opts,
+	}
+}
+
+// New creates and initialize a service.
 func New(opts Options) (*Service, error) {
-	s := new(Service)
-	s.opts = opts
+	s := Create(opts)
 
 	if err := s.Start(); err != nil {
 		return nil, err
@@ -62,30 +65,18 @@ func New(opts Options) (*Service, error) {
 	return s, nil
 }
 
-// Close terminates the service (databases, search indexes, etc...). Any error
-// closing the service will be stored at Service.err and will be accessible
-// from Service.Err().
-func (s *Service) Close() {
-	if s.closed {
-		return
+// Close terminates the service (databases, search indexes, etc...).
+func (s *Service) Close() error {
+	if !s.running {
+		return nil
 	}
 
-	s.err = s.closeDB()
-	s.closed = true
+	s.running = false
+	return s.closeDB()
 }
 
-// Err checks if any error occurred during some processes (closing, etc...).
-func (s *Service) Err() error {
-	return s.err
-}
-
-// IsTemp returns true if the service persistent storage is temporary.
-func (s *Service) IsTemp() bool {
-	return s.opts.Database == ""
-}
-
-// Start initialize the service (databases, search indexes, etc...). Returns an
-// error if any.
+// Start initialize the service (databases, search indexes, etc...).
 func (s *Service) Start() error {
+	s.running = true
 	return s.openDB()
 }

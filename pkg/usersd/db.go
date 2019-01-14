@@ -4,16 +4,15 @@
 package usersd
 
 import (
-	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/analysis/analyzer/keyword"
 	"github.com/dgraph-io/badger"
 )
 
-// Backup writes a database backup to the given io.Writer. Returns an error if
-// any.
+// Backup writes a database backup to the given io.Writer.
 // func (s *Service) Backup(w io.Writer) error {
 // 	if _, err := s.db.Backup(w, 0); err != nil {
 // 		return err
@@ -22,8 +21,7 @@ import (
 // 	return nil
 // }
 
-// Restore reads a database backup from the given io.Reader. Returns an error
-// if any.
+// Restore reads a database backup from the given io.Reader.
 // func (s *Service) Restore(r io.Reader) error {
 // 	if err := s.db.Load(r); err != nil {
 // 		return err
@@ -32,7 +30,38 @@ import (
 // 	return nil
 // }
 
-// Tx wraps a complete context for doing user operations.
+// closeDB closes the database and the search index.
+func (s *Service) closeDB() error {
+	if err := s.db.Close(); err != nil {
+		return err
+	}
+
+	_, kvs, err := s.index.Advanced()
+	if err != nil {
+		return err
+	}
+
+	return kvs.Close()
+}
+
+// openDB opens/creates database and indexing directories.
+func (s *Service) openDB() error {
+	var err error
+	dir := s.opts.Database
+
+	if s.db, err = openDB(filepath.Join(dir, "data")); err != nil {
+		return err
+	}
+
+	if s.index, err = openIndex(filepath.Join(dir, "search")); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Tx wraps a complete context for doing user operations. See also
+// Service.NewTx.
 type Tx struct {
 	*badger.Txn
 	Index   bleve.Index
@@ -49,7 +78,7 @@ func (s *Service) NewTx(writable bool) *Tx {
 	}
 }
 
-// Get is a helper that fetch the data for the given key.
+// Get fetches data from the database at the given key.
 func (tx *Tx) Get(key []byte) ([]byte, error) {
 	item, err := tx.Txn.Get(key)
 	if err != nil {
@@ -59,44 +88,6 @@ func (tx *Tx) Get(key []byte) ([]byte, error) {
 	return item.ValueCopy(nil)
 }
 
-// closeDB closes the database and the search index. Returns an error if any.
-func (s *Service) closeDB() error {
-	if err := s.db.Close(); err != nil {
-		return err
-	}
-
-	_, kvs, err := s.index.Advanced()
-	if err != nil {
-		return err
-	}
-
-	return kvs.Close()
-}
-
-// openDB opens/creates database and indexing directories. Return an error if
-// any.
-func (s *Service) openDB() (err error) {
-	dir := s.opts.Database
-	if dir == "" {
-		if dir, err = ioutil.TempDir("", "usersd"); err != nil {
-			return err
-		}
-	}
-
-	badger.SetLogger(badgerLogger)
-
-	if s.db, err = openDB(dir + "/data"); err != nil {
-		return err
-	}
-
-	if s.index, err = openIndex(dir + "/search"); err != nil {
-		s.err = s.closeDB()
-		return err
-	}
-
-	return nil
-}
-
 func openDB(dir string) (*badger.DB, error) {
 	opts := badger.DefaultOptions
 	opts.Dir = dir
@@ -104,13 +95,11 @@ func openDB(dir string) (*badger.DB, error) {
 
 	db, err := badger.Open(opts)
 	if err != nil {
-		if err = os.MkdirAll(dir+"/data", 0700); err != nil {
+		if err = os.MkdirAll(dir, 0700); err != nil {
 			return nil, err
 		}
 
-		if db, err = badger.Open(opts); err != nil {
-			return nil, err
-		}
+		return badger.Open(opts)
 	}
 
 	return db, nil
@@ -130,13 +119,10 @@ func openIndex(dir string) (bleve.Index, error) {
 		users.AddFieldMappingsAt("phone", keywordField)
 
 		mapping := bleve.NewIndexMapping()
-		mapping.AddDocumentMapping(usersDI, users)
 		mapping.TypeField = "documenttype"
+		mapping.AddDocumentMapping(UsersDI, users)
 
-		index, err = bleve.New(dir, mapping)
-		if err != nil {
-			return nil, err
-		}
+		return bleve.New(dir, mapping)
 	} else if err != nil {
 		return nil, err
 	}
@@ -150,4 +136,7 @@ func (l *bl) Errorf(f string, v ...interface{})   {}
 func (l *bl) Infof(f string, v ...interface{})    {}
 func (l *bl) Warningf(f string, v ...interface{}) {}
 
-var badgerLogger = &bl{}
+func init() {
+	var badgerLogger = &bl{}
+	badger.SetLogger(badgerLogger)
+}

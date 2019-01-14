@@ -23,6 +23,7 @@ linters:
   enable-all: true
   disable:
     - gochecknoglobals
+    - gochecknoinits
     - depguard
     - unparam
     - unused

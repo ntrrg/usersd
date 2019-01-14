@@ -11,12 +11,20 @@ import (
 	"github.com/dgraph-io/badger"
 )
 
-const (
-	usersDI         = "users"
-	defaultUserMode = "local"
-)
+// Users documents identifier.
+const UsersDI = "users"
 
-// User is an entity that may be authenticated and authorized.
+const defaultUserMode = "local"
+
+// User is an entity that may be authenticated and authorized. See also:
+//
+// * Tx.WriteUser: write the user.
+//
+// * Tx.GetUser: get user by ID.
+//
+// * Tx.GetUsers: get users that satisfies some constraints.
+//
+// * Tx.DeleteUser: delete the given user.
 type User struct {
 	ID        string `json:"id"`
 	Mode      string `json:"mode"`
@@ -32,13 +40,13 @@ type User struct {
 	PhoneVerified bool   `json:"phoneVerified"`
 }
 
-// GetUser fetches a user with the given ID from the database.
-func GetUser(tx *Tx, id string) (*User, error) {
+// GetUser fetches a user with the given ID from the DB.
+func (tx *Tx) GetUser(id string) (*User, error) {
 	if id == "" {
 		return nil, ErrUserNotFound
 	}
 
-	data, err := tx.Get([]byte(usersDI + id))
+	data, err := tx.Get([]byte(UsersDI + id))
 	if err == badger.ErrKeyNotFound {
 		return nil, ErrUserNotFound
 	} else if err != nil {
@@ -53,8 +61,8 @@ func GetUser(tx *Tx, id string) (*User, error) {
 	return user, nil
 }
 
-// GetUsers fetches users that satisfies the given constraints.
-func GetUsers(tx *Tx, q string, sort ...string) ([]*User, error) {
+// GetUsers fetches users from the DB that satisfies the given constraints.
+func (tx *Tx) GetUsers(q string, sort ...string) ([]*User, error) {
 	if q == "" && len(sort) == 0 {
 		return getAllUsers(tx)
 	}
@@ -66,7 +74,7 @@ func GetUsers(tx *Tx, q string, sort ...string) ([]*User, error) {
 	)
 
 	if q != "" {
-		bq = bleve.NewQueryStringQuery(q + " +documenttype:" + usersDI)
+		bq = bleve.NewQueryStringQuery(q + " +documenttype:" + UsersDI)
 	} else {
 		bq = bleve.NewMatchAllQuery()
 	}
@@ -80,7 +88,7 @@ func GetUsers(tx *Tx, q string, sort ...string) ([]*User, error) {
 	}
 
 	for _, hit := range res.Hits {
-		user, err := GetUser(tx, hit.ID)
+		user, err := tx.GetUser(hit.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -91,25 +99,27 @@ func GetUsers(tx *Tx, q string, sort ...string) ([]*User, error) {
 	return users, nil
 }
 
-// Delete removes the user from the database.
-func (u *User) Delete(tx *Tx) error {
-	if err := tx.Delete([]byte(usersDI + u.ID)); err != nil {
+// DeleteUser removes the user from the DB.
+func (tx *Tx) DeleteUser(id string) error {
+	if err := tx.Delete([]byte(UsersDI + id)); err != nil {
 		return err
 	}
 
-	return tx.Index.Delete(u.ID)
+	// TODO: Delete password at user deletion.
+
+	return tx.Index.Delete(id)
 }
 
-// Validate checks the user data and returns any errors.
-func (u *User) Validate(tx *Tx) error {
-	old, err := GetUser(tx, u.ID)
+// ValidateUser checks the user data and returns any errors.
+func (tx *Tx) ValidateUser(user *User) error {
+	old, err := tx.GetUser(user.ID)
 	if err != nil && err != ErrUserNotFound {
 		return err
 	}
 
-	errors := Errors{}
+	var errors Errors
 
-	rules := []func(tx *Tx, user *User, old *User) error{
+	rules := []func(*Tx, *User, *User) error{
 		userIDValidator,
 		userEmailValidator,
 		userEmailVerifiedValidator,
@@ -121,30 +131,30 @@ func (u *User) Validate(tx *Tx) error {
 	}
 
 	for _, f := range rules {
-		if err := f(tx, u, old); err != nil {
+		if err := f(tx, user, old); err != nil {
 			errors = append(errors, err)
 		}
 	}
 
-	if len(errors) > 0 {
+	if len(errors) != 0 {
 		return errors
 	}
 
 	return nil
 }
 
-// Write writes the user data to the database.
-func (u *User) Write(tx *Tx) error {
-	if err := u.Validate(tx); err != nil {
+// WriteUser writes the user data to the DB.
+func (tx *Tx) WriteUser(user *User) error {
+	if err := tx.ValidateUser(user); err != nil {
 		return err
 	}
 
-	data, err := json.Marshal(u)
+	data, err := json.Marshal(user)
 	if err != nil {
 		return err
 	}
 
-	if err := tx.Set([]byte(usersDI+u.ID), data); err != nil {
+	if err := tx.Set([]byte(UsersDI+user.ID), data); err != nil {
 		return err
 	}
 
@@ -153,47 +163,8 @@ func (u *User) Write(tx *Tx) error {
 		return err
 	}
 
-	v["documenttype"] = usersDI
-	return tx.Index.Index(u.ID, v)
-}
-
-// GetUser is a helper method for GetUser.
-func (s *Service) GetUser(id string) (*User, error) {
-	tx := s.NewTx(false)
-	defer tx.Discard()
-	return GetUser(tx, id)
-}
-
-// GetUsers is a helper method for GetUsers.
-func (s *Service) GetUsers(q string, sort ...string) ([]*User, error) {
-	tx := s.NewTx(false)
-	defer tx.Discard()
-	return GetUsers(tx, q, sort...)
-}
-
-// DeleteUser is a helper method for User.Delete.
-func (s *Service) DeleteUser(id string) error {
-	user := &User{ID: id}
-	tx := s.NewTx(true)
-	defer tx.Discard()
-
-	if err := user.Delete(tx); err != nil {
-		return err
-	}
-
-	return tx.Commit()
-}
-
-// WriteUser is a helper method for User.Write.
-func (s *Service) WriteUser(user *User) error {
-	tx := s.NewTx(true)
-	defer tx.Discard()
-
-	if err := user.Write(tx); err != nil {
-		return err
-	}
-
-	return tx.Commit()
+	v["documenttype"] = UsersDI
+	return tx.Index.Index(user.ID, v)
 }
 
 func getAllUsers(tx *Tx) ([]*User, error) {
@@ -205,7 +176,7 @@ func getAllUsers(tx *Tx) ([]*User, error) {
 	var (
 		v []byte
 
-		prefix = []byte(usersDI)
+		prefix = []byte(UsersDI)
 	)
 
 	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {

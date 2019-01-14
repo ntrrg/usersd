@@ -9,7 +9,8 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
-const passwordsDI = "passwords"
+// Passwords documents identifier.
+const PasswordsDI = "passwords"
 
 // PasswordOptions wraps variables that control the passwords hashing algorithm
 // behavior.
@@ -23,17 +24,17 @@ type PasswordOptions struct {
 
 // CheckPassword compares the given password with the user password and returns
 // true if match.
-func (s *Service) CheckPassword(tx *Tx, userid, password string) bool {
+func (tx *Tx) CheckPassword(userid, password string) bool {
 	if password == "" {
 		return false
 	}
 
-	data, err := tx.Get([]byte(passwordsDI + userid))
+	data, err := tx.Get([]byte(PasswordsDI + userid))
 	if err != nil {
 		return false
 	}
 
-	opts := s.opts.PasswdOpts
+	opts := tx.Service.opts.PasswdOpts
 	salt, oldhash := data[:opts.SaltSize], data[opts.SaltSize:]
 
 	hash := argon2.IDKey(
@@ -51,17 +52,17 @@ func (s *Service) CheckPassword(tx *Tx, userid, password string) bool {
 }
 
 // SetPassword assigns password to the given user.
-func (s *Service) SetPassword(tx *Tx, userid, password string) error {
+func (tx *Tx) SetPassword(userid, password string) error {
 	if password == "" {
 		return ErrPasswordEmpty
 	}
 
-	user, err := GetUser(tx, userid)
+	user, err := tx.GetUser(userid)
 	if err != nil {
 		return err
 	}
 
-	opts := s.opts.PasswdOpts
+	opts := tx.Service.opts.PasswdOpts
 	salt := make([]byte, opts.SaltSize)
 	if _, err := rand.Read(salt); err != nil {
 		return err
@@ -72,5 +73,5 @@ func (s *Service) SetPassword(tx *Tx, userid, password string) error {
 		opts.Time, opts.Memory, opts.Threads, opts.HashSize,
 	)
 
-	return tx.Set([]byte(passwordsDI+user.ID), append(salt, hash...))
+	return tx.Set([]byte(PasswordsDI+user.ID), append(salt, hash...))
 }

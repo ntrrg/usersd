@@ -9,8 +9,8 @@ import (
 	"github.com/ntrrg/usersd/pkg/usersd"
 )
 
-func TestGetUser(t *testing.T) {
-	ud, err := usersd.New(usersd.DefaultOptions)
+func TestTx_GetUser(t *testing.T) {
+	ud, err := initTest("tx-get-user", true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -20,24 +20,13 @@ func TestGetUser(t *testing.T) {
 	tx := ud.NewTx(true)
 	defer tx.Discard()
 
-	usersFixtures(t, tx)
-
-	user, err := usersd.GetUser(tx, "admin")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if user.Email != "admin@example.com" {
-		t.Errorf("GetUser(admin).Email == %v, wants admin@example.com", user.Email)
-	}
-
-	if user.Mode != "local" {
-		t.Errorf("GetUser(admin).Mode == %v, wants local", user.Mode)
+	if _, err := tx.GetUser("admin"); err != nil {
+		t.Errorf("Can't fetch the user data -> %v", err)
 	}
 }
 
-func TestGetUser_discartedTx(t *testing.T) {
-	ud, err := usersd.New(usersd.DefaultOptions)
+func TestTx_GetUser_discartedTx(t *testing.T) {
+	ud, err := initTest("tx-get-user-discarted", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,13 +36,13 @@ func TestGetUser_discartedTx(t *testing.T) {
 	tx := ud.NewTx(false)
 	tx.Discard()
 
-	if _, err = usersd.GetUser(tx, "admin"); err == nil {
-		t.Fatal("Getting user with discarted transaction")
+	if _, err = tx.GetUser("admin"); err == nil {
+		t.Error("Getting user with discarted transaction")
 	}
 }
 
-func TestGetUser_malformedData(t *testing.T) {
-	ud, err := usersd.New(usersd.DefaultOptions)
+func TestTx_GetUser_malformedData(t *testing.T) {
+	ud, err := initTest("tx-get-user-malformed", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,17 +52,17 @@ func TestGetUser_malformedData(t *testing.T) {
 	tx := ud.NewTx(true)
 	defer tx.Discard()
 
-	if err = tx.Set([]byte("usersadmin"), []byte{1, 2}); err != nil {
+	if err = tx.Set([]byte(usersd.UsersDI+"admin"), []byte{1, 2}); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err = usersd.GetUser(tx, "admin"); err == nil {
-		t.Fatal("Getting user with malformed data")
+	if _, err = tx.GetUser("admin"); err == nil {
+		t.Error("Getting user with malformed data")
 	}
 }
 
-func TestGetUsers(t *testing.T) {
-	ud, err := usersd.New(usersd.DefaultOptions)
+func TestTx_GetUsers(t *testing.T) {
+	ud, err := initTest("tx-get-users", true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,8 +71,6 @@ func TestGetUsers(t *testing.T) {
 
 	tx := ud.NewTx(true)
 	defer tx.Discard()
-
-	usersFixtures(t, tx)
 
 	cases := []struct {
 		name string
@@ -109,20 +96,20 @@ func TestGetUsers(t *testing.T) {
 		c := c
 
 		t.Run(c.name, func(t *testing.T) {
-			users, err := usersd.GetUsers(tx, c.q)
+			users, err := tx.GetUsers(c.q)
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			if len(users) != c.want {
-				t.Errorf("GetUsers(%v) gets invalid data -> %v", c.q, users)
+				t.Errorf("tx.GetUsers(%v) gets invalid data -> %v", c.q, users)
 			}
 		})
 	}
 }
 
-func TestGetUsers_sorted(t *testing.T) {
-	ud, err := usersd.New(usersd.DefaultOptions)
+func TestTx_GetUsers_sorted(t *testing.T) {
+	ud, err := initTest("tx-get-users-sorted", true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,9 +119,7 @@ func TestGetUsers_sorted(t *testing.T) {
 	tx := ud.NewTx(true)
 	defer tx.Discard()
 
-	usersFixtures(t, tx)
-
-	users, err := usersd.GetUsers(tx, "", "-email")
+	users, err := tx.GetUsers("", "-email")
 	if err != nil {
 		t.Fatal("Can't fetch the users")
 	}
@@ -152,8 +137,8 @@ func TestGetUsers_sorted(t *testing.T) {
 	}
 }
 
-func TestGetUsers_outdatedIndex(t *testing.T) {
-	ud, err := usersd.New(usersd.DefaultOptions)
+func TestTx_GetUsers_outdatedIndex(t *testing.T) {
+	ud, err := initTest("tx-get-users-outdated-index", true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,19 +148,17 @@ func TestGetUsers_outdatedIndex(t *testing.T) {
 	tx := ud.NewTx(true)
 	defer tx.Discard()
 
-	usersFixtures(t, tx)
-
-	if err = tx.Delete([]byte("usersadmin")); err != nil {
+	if err = tx.Delete([]byte(usersd.UsersDI + "admin")); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err = usersd.GetUsers(tx, "+id:admin"); err == nil {
+	if _, err = tx.GetUsers("+id:admin"); err == nil {
 		t.Error("Getting users with an outdated search index")
 	}
 }
 
-func TestGetUsers_malformedData(t *testing.T) {
-	ud, err := usersd.New(usersd.DefaultOptions)
+func TestTx_GetUsers_malformedData(t *testing.T) {
+	ud, err := initTest("tx-get-users-malformed", true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -185,17 +168,17 @@ func TestGetUsers_malformedData(t *testing.T) {
 	tx := ud.NewTx(true)
 	defer tx.Discard()
 
-	if err = tx.Set([]byte("usersadmin"), []byte{1, 2}); err != nil {
+	if err = tx.Set([]byte(usersd.UsersDI+"admin"), []byte{1, 2}); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err = usersd.GetUsers(tx, ""); err == nil {
+	if _, err = tx.GetUsers(""); err == nil {
 		t.Error("Getting users with malformed data")
 	}
 }
 
-func TestUser_Delete(t *testing.T) {
-	ud, err := usersd.New(usersd.DefaultOptions)
+func TestTx_DeleteUser(t *testing.T) {
+	ud, err := initTest("tx-delete-user", true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -205,9 +188,7 @@ func TestUser_Delete(t *testing.T) {
 	tx := ud.NewTx(true)
 	defer tx.Discard()
 
-	usersFixtures(t, tx)
-
-	users, err := usersd.GetUsers(tx, "")
+	users, err := tx.GetUsers("")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -217,12 +198,12 @@ func TestUser_Delete(t *testing.T) {
 	}
 
 	for _, user := range users {
-		if err = user.Delete(tx); err != nil {
+		if err = tx.DeleteUser(user.ID); err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	users, err = usersd.GetUsers(tx, "")
+	users, err = tx.GetUsers("")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -232,26 +213,24 @@ func TestUser_Delete(t *testing.T) {
 	}
 }
 
-func TestUser_Delete_discartedTx(t *testing.T) {
-	ud, err := usersd.New(usersd.DefaultOptions)
+func TestTx_DeleteUser_discartedTx(t *testing.T) {
+	ud, err := initTest("tx-delete-user-discarted", false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	defer ud.Close()
 
-	tx := ud.NewTx(true)
+	tx := ud.NewTx(false)
 	tx.Discard()
 
-	user := &usersd.User{ID: "test"}
-
-	if err = user.Delete(tx); err == nil {
+	if err = tx.DeleteUser(""); err == nil {
 		t.Error("Removing user with discarted transaction")
 	}
 }
 
-func TestUser_Delete_roTx(t *testing.T) {
-	ud, err := usersd.New(usersd.DefaultOptions)
+func TestTx_DeleteUser_roTx(t *testing.T) {
+	ud, err := initTest("tx-delete-user-ro", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -261,15 +240,13 @@ func TestUser_Delete_roTx(t *testing.T) {
 	tx := ud.NewTx(false)
 	defer tx.Discard()
 
-	user := &usersd.User{ID: "test"}
-
-	if err = user.Delete(tx); err == nil {
+	if err = tx.DeleteUser(""); err == nil {
 		t.Error("Removing user with read-only transaction")
 	}
 }
 
-func TestUser_Write(t *testing.T) {
-	ud, err := usersd.New(usersd.DefaultOptions)
+func TestTx_WriteUser(t *testing.T) {
+	ud, err := initTest("tx-write-user", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -339,7 +316,7 @@ func TestUser_Write(t *testing.T) {
 		c := c
 
 		t.Run(c.name, func(t *testing.T) {
-			err := c.user.Write(tx)
+			err := tx.WriteUser(c.user)
 
 			switch {
 			case err != nil && !c.fail:
@@ -353,8 +330,8 @@ func TestUser_Write(t *testing.T) {
 	}
 }
 
-func TestUser_Write_discartedTx(t *testing.T) {
-	ud, err := usersd.New(usersd.DefaultOptions)
+func TestTx_WriteUser_discartedTx(t *testing.T) {
+	ud, err := initTest("tx-write-user-discarted", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -364,15 +341,14 @@ func TestUser_Write_discartedTx(t *testing.T) {
 	tx := ud.NewTx(true)
 	tx.Discard()
 
-	user := &usersd.User{}
-
-	if err = user.Write(tx); err == nil {
+	user := new(usersd.User)
+	if err = tx.WriteUser(user); err == nil {
 		t.Error("Writing user with discarted transaction")
 	}
 }
 
-func TestUser_Write_roTx(t *testing.T) {
-	ud, err := usersd.New(usersd.DefaultOptions)
+func TestTx_WriteUser_roTx(t *testing.T) {
+	ud, err := initTest("tx-write-user-ro", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -383,120 +359,7 @@ func TestUser_Write_roTx(t *testing.T) {
 	defer tx.Discard()
 
 	user := new(usersd.User)
-	if err = user.Write(tx); err == nil {
+	if err = tx.WriteUser(user); err == nil {
 		t.Error("Writing user with read-only transaction")
-	}
-}
-
-func TestService_GetUser(t *testing.T) {
-	ud, err := usersd.New(usersd.DefaultOptions)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer ud.Close()
-
-	tx := ud.NewTx(true)
-	defer tx.Discard()
-
-	usersFixtures(t, tx)
-
-	if err = tx.Commit(); err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err := ud.GetUser("admin"); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestService_GetUsers(t *testing.T) {
-	ud, err := usersd.New(usersd.DefaultOptions)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer ud.Close()
-
-	tx := ud.NewTx(true)
-	defer tx.Discard()
-
-	usersFixtures(t, tx)
-
-	if err = tx.Commit(); err != nil {
-		t.Fatal(err)
-	}
-
-	users, err := ud.GetUsers("")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(users) == 0 {
-		t.Error("0 usersd fetched")
-	}
-}
-
-func TestService_DeleteUser(t *testing.T) {
-	ud, err := usersd.New(usersd.DefaultOptions)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer ud.Close()
-
-	tx := ud.NewTx(true)
-	defer tx.Discard()
-
-	usersFixtures(t, tx)
-
-	if err = tx.Commit(); err != nil {
-		t.Fatal(err)
-	}
-
-	if err = ud.DeleteUser("admin"); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestService_WriteUser(t *testing.T) {
-	ud, err := usersd.New(usersd.DefaultOptions)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer ud.Close()
-
-	user := new(usersd.User)
-	if err = ud.WriteUser(user); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func usersFixtures(t *testing.T, tx *usersd.Tx) {
-	users := []*usersd.User{
-		{
-			ID:    "admin",
-			Email: "admin@example.com",
-		},
-
-		{
-			Email: "john@example.com",
-			Phone: "+12345678901",
-		},
-
-		{
-			Email: "john2@example.com",
-			Data: map[string]interface{}{
-				"username": "john",
-				"name":     "John Doe",
-			},
-		},
-	}
-
-	for _, user := range users {
-		if err := user.Write(tx); err != nil {
-			t.Fatal(err)
-		}
 	}
 }
