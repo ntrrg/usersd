@@ -105,7 +105,9 @@ func (tx *Tx) DeleteUser(id string) error {
 		return err
 	}
 
-	// TODO: Delete password at user deletion.
+	if err := tx.Delete([]byte(PasswordsDI + id)); err != nil {
+		return err
+	}
 
 	return tx.Index.Delete(id)
 }
