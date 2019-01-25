@@ -10,14 +10,13 @@ import (
 )
 
 func TestTx_GetUser(t *testing.T) {
-	ud, err := initTest("tx-get-user", true)
-	if err != nil {
+	if err := initTest("tx-get-user", true); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(true)
+	tx := usersd.NewTx(true)
 	defer tx.Discard()
 
 	if _, err := tx.GetUser("admin"); err != nil {
@@ -26,50 +25,47 @@ func TestTx_GetUser(t *testing.T) {
 }
 
 func TestTx_GetUser_discartedTx(t *testing.T) {
-	ud, err := initTest("tx-get-user-discarted", false)
-	if err != nil {
+	if err := initTest("tx-get-user-discarted", false); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(false)
+	tx := usersd.NewTx(false)
 	tx.Discard()
 
-	if _, err = tx.GetUser("admin"); err == nil {
+	if _, err := tx.GetUser("admin"); err == nil {
 		t.Error("Getting user with discarted transaction")
 	}
 }
 
 func TestTx_GetUser_malformedData(t *testing.T) {
-	ud, err := initTest("tx-get-user-malformed", false)
-	if err != nil {
+	if err := initTest("tx-get-user-malformed", false); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(true)
+	tx := usersd.NewTx(true)
 	defer tx.Discard()
 
-	if err = tx.Set([]byte(usersd.UsersDI+"admin"), []byte{1, 2}); err != nil {
+	if err := tx.Set([]byte(usersd.UsersDI+"admin"), []byte{1, 2}); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err = tx.GetUser("admin"); err == nil {
+	if _, err := tx.GetUser("admin"); err == nil {
 		t.Error("Getting user with malformed data")
 	}
 }
 
 func TestTx_GetUsers(t *testing.T) {
-	ud, err := initTest("tx-get-users", true)
-	if err != nil {
+	if err := initTest("tx-get-users", true); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(true)
+	tx := usersd.NewTx(true)
 	defer tx.Discard()
 
 	cases := []struct {
@@ -109,14 +105,13 @@ func TestTx_GetUsers(t *testing.T) {
 }
 
 func TestTx_GetUsers_sorted(t *testing.T) {
-	ud, err := initTest("tx-get-users-sorted", true)
-	if err != nil {
+	if err := initTest("tx-get-users-sorted", true); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(true)
+	tx := usersd.NewTx(true)
 	defer tx.Discard()
 
 	users, err := tx.GetUsers("", "-email")
@@ -138,54 +133,51 @@ func TestTx_GetUsers_sorted(t *testing.T) {
 }
 
 func TestTx_GetUsers_outdatedIndex(t *testing.T) {
-	ud, err := initTest("tx-get-users-outdated-index", true)
-	if err != nil {
+	if err := initTest("tx-get-users-outdated-index", true); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(true)
+	tx := usersd.NewTx(true)
 	defer tx.Discard()
 
-	if err = tx.Delete([]byte(usersd.UsersDI + "admin")); err != nil {
+	if err := tx.Delete([]byte(usersd.UsersDI + "admin")); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err = tx.GetUsers("+id:admin"); err == nil {
+	if _, err := tx.GetUsers("+id:admin"); err == nil {
 		t.Error("Getting users with an outdated search index")
 	}
 }
 
 func TestTx_GetUsers_malformedData(t *testing.T) {
-	ud, err := initTest("tx-get-users-malformed", true)
-	if err != nil {
+	if err := initTest("tx-get-users-malformed", true); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(true)
+	tx := usersd.NewTx(true)
 	defer tx.Discard()
 
-	if err = tx.Set([]byte(usersd.UsersDI+"admin"), []byte{1, 2}); err != nil {
+	if err := tx.Set([]byte(usersd.UsersDI+"admin"), []byte{1, 2}); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err = tx.GetUsers(""); err == nil {
+	if _, err := tx.GetUsers(""); err == nil {
 		t.Error("Getting users with malformed data")
 	}
 }
 
 func TestTx_DeleteUser(t *testing.T) {
-	ud, err := initTest("tx-delete-user", true)
-	if err != nil {
+	if err := initTest("tx-delete-user", true); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(true)
+	tx := usersd.NewTx(true)
 	defer tx.Discard()
 
 	users, err := tx.GetUsers("")
@@ -214,46 +206,43 @@ func TestTx_DeleteUser(t *testing.T) {
 }
 
 func TestTx_DeleteUser_discartedTx(t *testing.T) {
-	ud, err := initTest("tx-delete-user-discarted", false)
-	if err != nil {
+	if err := initTest("tx-delete-user-discarted", false); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(false)
+	tx := usersd.NewTx(false)
 	tx.Discard()
 
-	if err = tx.DeleteUser(""); err == nil {
+	if err := tx.DeleteUser(""); err == nil {
 		t.Error("Removing user with discarted transaction")
 	}
 }
 
 func TestTx_DeleteUser_roTx(t *testing.T) {
-	ud, err := initTest("tx-delete-user-ro", false)
-	if err != nil {
+	if err := initTest("tx-delete-user-ro", false); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(false)
+	tx := usersd.NewTx(false)
 	defer tx.Discard()
 
-	if err = tx.DeleteUser(""); err == nil {
+	if err := tx.DeleteUser(""); err == nil {
 		t.Error("Removing user with read-only transaction")
 	}
 }
 
 func TestTx_WriteUser(t *testing.T) {
-	ud, err := initTest("tx-write-user", false)
-	if err != nil {
+	if err := initTest("tx-write-user", false); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(true)
+	tx := usersd.NewTx(true)
 	defer tx.Discard()
 
 	cases := []struct {
@@ -331,35 +320,33 @@ func TestTx_WriteUser(t *testing.T) {
 }
 
 func TestTx_WriteUser_discartedTx(t *testing.T) {
-	ud, err := initTest("tx-write-user-discarted", false)
-	if err != nil {
+	if err := initTest("tx-write-user-discarted", false); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(true)
+	tx := usersd.NewTx(true)
 	tx.Discard()
 
 	user := new(usersd.User)
-	if err = tx.WriteUser(user); err == nil {
+	if err := tx.WriteUser(user); err == nil {
 		t.Error("Writing user with discarted transaction")
 	}
 }
 
 func TestTx_WriteUser_roTx(t *testing.T) {
-	ud, err := initTest("tx-write-user-ro", false)
-	if err != nil {
+	if err := initTest("tx-write-user-ro", false); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(false)
+	tx := usersd.NewTx(false)
 	defer tx.Discard()
 
 	user := new(usersd.User)
-	if err = tx.WriteUser(user); err == nil {
+	if err := tx.WriteUser(user); err == nil {
 		t.Error("Writing user with read-only transaction")
 	}
 }

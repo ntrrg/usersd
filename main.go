@@ -60,7 +60,7 @@ func main() {
 		log.SetOutput(lf)
 	}
 
-	if _, err := usersd.New(usersdOpts); err != nil {
+	if err := usersd.Init(usersdOpts); err != nil {
 		log.Fatalf("[FATAL][USERSD] Can't initialize the API -> %v", err)
 	}
 

@@ -30,34 +30,32 @@ func TestUnmarshalJWT(t *testing.T) {
 }
 
 func TestTx_JWT(t *testing.T) {
-	ud, err := initTest("tx-jwt", true)
-	if err != nil {
+	if err := initTest("tx-jwt", true); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(true)
+	tx := usersd.NewTx(true)
 	defer tx.Discard()
 
-	if _, err = tx.JWT("non-existent-user", 0); err == nil {
+	if _, err := tx.JWT("non-existent-user", 0); err == nil {
 		t.Error("JWT generated for non existent user")
 	}
 
-	if _, err = tx.JWT("admin", 0); err != nil {
+	if _, err := tx.JWT("admin", 0); err != nil {
 		t.Errorf("Can't generate the JWT -> %v", err)
 	}
 }
 
 func TestTx_VerifyJWT(t *testing.T) {
-	ud, err := initTest("tx-verify-jwt", true)
-	if err != nil {
+	if err := initTest("tx-verify-jwt", true); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(false)
+	tx := usersd.NewTx(false)
 	defer tx.Discard()
 
 	token := []byte("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ1c2Vyc2QiLCJzdWIiOiJ0ZXN0IiwiaWF0IjoxNTQ2MjI1MTk0LCJ1c2VyIjp7ImlkIjoidGVzdCIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsIm1vZGUiOiJsb2NhbCIsInZlcmlmaWVkIjpmYWxzZSwiY3JlYXRlZEF0IjoxNTQ2MjI1MTk0LCJsYXN0TG9naW4iOjB9fQ.CE6an7tDnzsEsq2aexjln5uUuG5Rtju6ObDqgbTLDro") // nolint: lll

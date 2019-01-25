@@ -5,17 +5,18 @@ package usersd_test
 
 import (
 	"testing"
+
+	"github.com/ntrrg/usersd/pkg/usersd"
 )
 
 func TestTx_CheckPassword(t *testing.T) {
-	ud, err := initTest("tx-check-password", true)
-	if err != nil {
+	if err := initTest("tx-check-password", true); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(true)
+	tx := usersd.NewTx(true)
 	defer tx.Discard()
 
 	if !tx.CheckPassword("admin", "admin") {
@@ -32,14 +33,13 @@ func TestTx_CheckPassword(t *testing.T) {
 }
 
 func TestTx_CheckPassword_emptyPassword(t *testing.T) {
-	ud, err := initTest("tx-check-password-empty-password", false)
-	if err != nil {
+	if err := initTest("tx-check-password-empty-password", false); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(false)
+	tx := usersd.NewTx(false)
 	defer tx.Discard()
 
 	if tx.CheckPassword("", "") {
@@ -48,14 +48,13 @@ func TestTx_CheckPassword_emptyPassword(t *testing.T) {
 }
 
 func TestTx_CheckPassword_nonExistentUser(t *testing.T) {
-	ud, err := initTest("tx-check-password-ne-user", false)
-	if err != nil {
+	if err := initTest("tx-check-password-ne-user", false); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(false)
+	tx := usersd.NewTx(false)
 	defer tx.Discard()
 
 	if tx.CheckPassword("", "1234") {
@@ -64,14 +63,13 @@ func TestTx_CheckPassword_nonExistentUser(t *testing.T) {
 }
 
 func TestTx_CheckPassword_userWithoutPassword(t *testing.T) {
-	ud, err := initTest("tx-check-password-user-wo-password", true)
-	if err != nil {
+	if err := initTest("tx-check-password-user-wo-password", true); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(true)
+	tx := usersd.NewTx(true)
 	defer tx.Discard()
 
 	users, err := tx.GetUsers(`+email:"john@example.com"`)
@@ -87,14 +85,13 @@ func TestTx_CheckPassword_userWithoutPassword(t *testing.T) {
 }
 
 func TestTx_SetPassword(t *testing.T) {
-	ud, err := initTest("tx-set-password", true)
-	if err != nil {
+	if err := initTest("tx-set-password", true); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(true)
+	tx := usersd.NewTx(true)
 	defer tx.Discard()
 
 	if err := tx.SetPassword("admin", "1234"); err != nil {
@@ -103,14 +100,13 @@ func TestTx_SetPassword(t *testing.T) {
 }
 
 func TestService_SetPassword_emptyPassword(t *testing.T) {
-	ud, err := initTest("tx-set-password-empty-password", false)
-	if err != nil {
+	if err := initTest("tx-set-password-empty-password", false); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(false)
+	tx := usersd.NewTx(false)
 	defer tx.Discard()
 
 	if err := tx.SetPassword("", ""); err == nil {
@@ -119,14 +115,13 @@ func TestService_SetPassword_emptyPassword(t *testing.T) {
 }
 
 func TestService_SetPassword_nonExistentUser(t *testing.T) {
-	ud, err := initTest("tx-set-password-ne-user", false)
-	if err != nil {
+	if err := initTest("tx-set-password-ne-user", false); err != nil {
 		t.Fatal(err)
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
-	tx := ud.NewTx(false)
+	tx := usersd.NewTx(false)
 	defer tx.Discard()
 
 	if err := tx.SetPassword("", "1234"); err == nil {

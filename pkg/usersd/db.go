@@ -5,7 +5,6 @@ package usersd
 
 import (
 	"os"
-	"path/filepath"
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/analysis/analyzer/keyword"
@@ -30,55 +29,22 @@ import (
 // 	return nil
 // }
 
-// closeDB closes the database and the search index.
-func (s *Service) closeDB() error {
-	if err := s.db.Close(); err != nil {
-		return err
-	}
-
-	_, kvs, err := s.index.Advanced()
-	if err != nil {
-		return err
-	}
-
-	return kvs.Close()
-}
-
-// openDB opens/creates database and indexing directories.
-func (s *Service) openDB() error {
-	var err error
-	dir := s.opts.Database
-
-	if s.db, err = openDB(filepath.Join(dir, "data")); err != nil {
-		return err
-	}
-
-	if s.index, err = openIndex(filepath.Join(dir, "search")); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Tx wraps a complete context for doing user operations. See also
 // Service.NewTx.
 type Tx struct {
 	*badger.Txn
-	Index   bleve.Index
-	Service *Service
+	Token *Token
 }
 
 // NewTx creates a database transaction. If writable is true, the database will
 // allow modifications.
-func (s *Service) NewTx(writable bool) *Tx {
+func NewTx(writable bool) *Tx {
 	return &Tx{
-		Txn:     s.db.NewTransaction(writable),
-		Index:   s.index,
-		Service: s,
+		Txn: usersd.db.NewTransaction(writable),
 	}
 }
 
-// Get fetches data from the database at the given key.
+// Get is a helper for Badger operations.
 func (tx *Tx) Get(key []byte) ([]byte, error) {
 	item, err := tx.Txn.Get(key)
 	if err != nil {

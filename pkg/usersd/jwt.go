@@ -53,7 +53,7 @@ func (tx *Tx) JWT(userid string, expire int64) ([]byte, error) {
 
 	jot := &Token{
 		JWT: &jwt.JWT{
-			Issuer:  tx.Service.opts.JWTOpts.Issuer,
+			Issuer:  usersd.opts.JWTOpts.Issuer,
 			Subject: user.ID,
 
 			ExpirationTime: expire,
@@ -63,7 +63,7 @@ func (tx *Tx) JWT(userid string, expire int64) ([]byte, error) {
 		User: user,
 	}
 
-	hs256 := jwt.NewHS256(tx.Service.opts.JWTOpts.Secret)
+	hs256 := jwt.NewHS256(usersd.opts.JWTOpts.Secret)
 	jot.SetAlgorithm(hs256)
 	payload, err := jwt.Marshal(jot)
 	if err != nil {
@@ -80,7 +80,7 @@ func (tx *Tx) VerifyJWT(token []byte) bool {
 		return false
 	}
 
-	hs256 := jwt.NewHS256(tx.Service.opts.JWTOpts.Secret)
+	hs256 := jwt.NewHS256(usersd.opts.JWTOpts.Secret)
 	if err = hs256.Verify(payload, sig); err != nil {
 		return false
 	}
@@ -91,7 +91,7 @@ func (tx *Tx) VerifyJWT(token []byte) bool {
 	}
 
 	validators := []jwt.ValidatorFunc{
-		jwt.IssuerValidator(tx.Service.opts.JWTOpts.Issuer),
+		jwt.IssuerValidator(usersd.opts.JWTOpts.Issuer),
 	}
 
 	if jot.ExpirationTime != 0 {

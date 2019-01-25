@@ -12,23 +12,22 @@ import (
 
 var testDir string
 
-func ExampleNew() {
+func ExampleInit() {
 	// New database
 
 	opts := usersd.DefaultOptions
 	opts.Database = filepath.Join(testDir, "example-new")
-	ud, err := usersd.New(opts)
-	if err != nil {
+	if err := usersd.Init(opts); err != nil {
 		// Error handling
 		return
 	}
 
 	// Can't be deferred because the code below uses the same database.
-	// defer ud.Close()
+	// defer usersd.Close()
 
 	// Your code here
 
-	if err = ud.Close(); err != nil {
+	if err := usersd.Close(); err != nil {
 		return
 	}
 
@@ -36,29 +35,27 @@ func ExampleNew() {
 
 	// Existing database
 
-	ud, err = usersd.New(opts)
-	if err != nil {
+	if err := usersd.Init(opts); err != nil {
 		// Error handling
 		return
 	}
 
-	defer ud.Close()
+	defer usersd.Close()
 
 	// Your code here
 
 	// Output:
 }
 
-func initTest(name string, fixtures bool) (*usersd.Service, error) {
+func initTest(name string, fixtures bool) error {
 	opts := usersd.DefaultOptions
 	opts.Database = filepath.Join(testDir, name)
-	ud, err := usersd.New(opts)
-	if err != nil {
-		return nil, err
+	if err := usersd.Init(opts); err != nil {
+		return err
 	}
 
 	if fixtures {
-		tx := ud.NewTx(true)
+		tx := usersd.NewTx(true)
 		defer tx.Discard()
 
 		fns := []func(*usersd.Tx) error{
@@ -66,17 +63,17 @@ func initTest(name string, fixtures bool) (*usersd.Service, error) {
 		}
 
 		for _, fn := range fns {
-			if err = fn(tx); err != nil {
-				return nil, err
+			if err := fn(tx); err != nil {
+				return err
 			}
 		}
 
-		if err = tx.Commit(); err != nil {
-			return nil, err
+		if err := tx.Commit(); err != nil {
+			return err
 		}
 	}
 
-	return ud, nil
+	return nil
 }
 
 func usersFixtures(tx *usersd.Tx) error {

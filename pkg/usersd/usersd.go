@@ -4,11 +4,20 @@
 package usersd
 
 import (
+	"path/filepath"
 	"runtime"
 
 	"github.com/blevesearch/bleve"
 	"github.com/dgraph-io/badger"
 )
+
+var usersd struct {
+	opts  Options
+	db    *badger.DB
+	index bleve.Index
+
+	running bool
+}
 
 // DefaultOptions are commonly used options for a simple Init call.
 var DefaultOptions = Options{
@@ -38,45 +47,38 @@ type Options struct {
 	JWTOpts JWTOptions
 }
 
-// Service is an authentication and authorization service.
-type Service struct {
-	opts  Options
-	db    *badger.DB
-	index bleve.Index
+// Init initializes the service.
+func Init(opts Options) (err error) {
+	dir := opts.Database
 
-	running bool
-}
-
-// Create creates a service, but doesn't initialize it.
-func Create(opts Options) *Service {
-	return &Service{
-		opts: opts,
-	}
-}
-
-// New creates and initialize a service.
-func New(opts Options) (*Service, error) {
-	s := Create(opts)
-
-	if err := s.Start(); err != nil {
-		return nil, err
+	if usersd.db, err = openDB(filepath.Join(dir, "data")); err != nil {
+		return err
 	}
 
-	return s, nil
-}
-
-// Close terminates the service (databases, search indexes, etc...).
-func (s *Service) Close() error {
-	if !s.running {
-		return nil
+	if usersd.index, err = openIndex(filepath.Join(dir, "search")); err != nil {
+		return err
 	}
 
-	s.running = false
-	return s.closeDB()
+	usersd.opts = opts
+	usersd.running = true
+	return nil
 }
 
-// Start initialize the service (databases, search indexes, etc...).
-func (s *Service) Start() error {
-	s.running = true
-	return s.openDB()
+// Close terminates the service.
+func Close() error {
+	if err := usersd.db.Close(); err != nil {
+		return err
+	}
+
+	_, kvs, err := usersd.index.Advanced()
+	if err != nil {
+		return err
+	}
+
+	if err = kvs.Close(); err != nil {
+		return err
+	}
+
+	usersd.running = false
+	return nil
 }

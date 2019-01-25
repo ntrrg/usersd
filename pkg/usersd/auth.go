@@ -34,7 +34,7 @@ func (tx *Tx) CheckPassword(userid, password string) bool {
 		return false
 	}
 
-	opts := tx.Service.opts.PasswdOpts
+	opts := usersd.opts.PasswdOpts
 	salt, oldhash := data[:opts.SaltSize], data[opts.SaltSize:]
 
 	hash := argon2.IDKey(
@@ -62,7 +62,7 @@ func (tx *Tx) SetPassword(userid, password string) error {
 		return err
 	}
 
-	opts := tx.Service.opts.PasswdOpts
+	opts := usersd.opts.PasswdOpts
 	salt := make([]byte, opts.SaltSize)
 	if _, err := rand.Read(salt); err != nil {
 		return err

@@ -82,7 +82,7 @@ func (tx *Tx) GetUsers(q string, sort ...string) ([]*User, error) {
 	req := bleve.NewSearchRequest(bq)
 	req.SortBy(sort)
 
-	res, err := tx.Index.Search(req)
+	res, err := usersd.index.Search(req)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (tx *Tx) DeleteUser(id string) error {
 		return err
 	}
 
-	return tx.Index.Delete(id)
+	return usersd.index.Delete(id)
 }
 
 // ValidateUser checks the user data and returns any errors.
@@ -166,7 +166,7 @@ func (tx *Tx) WriteUser(user *User) error {
 	}
 
 	v["documenttype"] = UsersDI
-	return tx.Index.Index(user.ID, v)
+	return usersd.index.Index(user.ID, v)
 }
 
 func getAllUsers(tx *Tx) ([]*User, error) {
