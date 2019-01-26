@@ -10,7 +10,7 @@
 
 ## Building
 
-* Go 1.11.4 or Docker 18.09
+* Go 1.11 or Docker 18.09
 
 ### Development:
 
