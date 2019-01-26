@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 
 	"github.com/blevesearch/bleve"
-	"github.com/blevesearch/bleve/search/query"
 	"github.com/dgraph-io/badger"
 )
 
@@ -67,18 +66,8 @@ func (tx *Tx) GetUsers(q string, sort ...string) ([]*User, error) {
 		return getAllUsers(tx)
 	}
 
-	var (
-		users = []*User{}
-
-		bq query.Query
-	)
-
-	if q != "" {
-		bq = bleve.NewQueryStringQuery(q + " +documenttype:" + UsersDI)
-	} else {
-		bq = bleve.NewMatchAllQuery()
-	}
-
+	users := []*User{}
+	bq := bleve.NewQueryStringQuery(q + " +documenttype:" + UsersDI)
 	req := bleve.NewSearchRequest(bq)
 	req.SortBy(sort)
 
