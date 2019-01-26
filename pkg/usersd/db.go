@@ -8,26 +8,54 @@ import (
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/analysis/analyzer/keyword"
+	"github.com/blevesearch/bleve/search/query"
 	"github.com/dgraph-io/badger"
 )
 
 // Backup writes a database backup to the given io.Writer.
-// func (s *Service) Backup(w io.Writer) error {
-// 	if _, err := s.db.Backup(w, 0); err != nil {
-// 		return err
-// 	}
-//
-// 	return nil
-// }
+func Backup(w io.Writer) error {
+	if _, err := usersd.db.Backup(w, 0); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // Restore reads a database backup from the given io.Reader.
-// func (s *Service) Restore(r io.Reader) error {
-// 	if err := s.db.Load(r); err != nil {
-// 		return err
-// 	}
-//
-// 	return nil
-// }
+func Restore(r io.Reader) error {
+	if err := usersd.db.Load(r); err != nil {
+		return err
+	}
+
+	bq := bleve.NewMatchAllQuery()
+	req := bleve.NewSearchRequest(bq)
+	res, err := usersd.index.Search(req)
+	if err != nil {
+		return err
+	}
+
+	for _, hit := range res.Hits {
+		if err := usersd.index.Delete(hit.ID); err != nil {
+			return err
+		}
+	}
+
+	tx := NewTx(false)
+	defer tx.Discard()
+
+	users, err := tx.GetUsers("")
+	if err != nil {
+		return err
+	}
+
+	for _, user := range users {
+		if err = tx.WriteUser(user); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 // Tx wraps a complete context for doing user operations. See also
 // Service.NewTx.
