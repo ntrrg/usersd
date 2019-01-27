@@ -37,6 +37,8 @@ type User struct {
 	Phone         string `json:"phone"`
 	EmailVerified bool   `json:"emailVerified"`
 	PhoneVerified bool   `json:"phoneVerified"`
+
+	Roles []string `json:"roles"`
 }
 
 // GetUser fetches a user with the given ID from the DB.
