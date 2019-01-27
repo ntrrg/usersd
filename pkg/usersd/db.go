@@ -57,11 +57,9 @@ func Restore(r io.Reader) error {
 	return nil
 }
 
-// Tx wraps a complete context for doing user operations. See also
-// Service.NewTx.
+// Tx wraps a complete context for doing user management operations.
 type Tx struct {
 	*badger.Txn
-	Token *Token
 }
 
 // NewTx creates a database transaction. If writable is true, the database will
