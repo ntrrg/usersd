@@ -4,11 +4,11 @@
 package usersd
 
 import (
+	"io"
 	"os"
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/analysis/analyzer/keyword"
-	"github.com/blevesearch/bleve/search/query"
 	"github.com/dgraph-io/badger"
 )
 
