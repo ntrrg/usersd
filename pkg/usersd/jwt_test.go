@@ -58,7 +58,31 @@ func TestTx_VerifyJWT(t *testing.T) {
 	tx := usersd.NewTx(false)
 	defer tx.Discard()
 
-	token := []byte("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ1c2Vyc2QiLCJzdWIiOiJ0ZXN0IiwiaWF0IjoxNTQ2MjI1MTk0LCJ1c2VyIjp7ImlkIjoidGVzdCIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsIm1vZGUiOiJsb2NhbCIsInZlcmlmaWVkIjpmYWxzZSwiY3JlYXRlZEF0IjoxNTQ2MjI1MTk0LCJsYXN0TG9naW4iOjB9fQ.CE6an7tDnzsEsq2aexjln5uUuG5Rtju6ObDqgbTLDro") // nolint: lll
+	token := []byte("invalid jwt format")
+
+	if tx.VerifyJWT(token) {
+		t.Error("Invalid JWT parsed")
+	}
+
+	token = []byte("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ1c2Vyc2QiLCJzdWIiOiJ0ZXN0IiwiaWF0IjoxNTQ2MjI1MTk0LCJ1c2VyIjp7ImlkIjoxMjM0LCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJtb2RlIjoibG9jYWwiLCJ2ZXJpZmllZCI6ZmFsc2UsImNyZWF0ZWRBdCI6MTU0NjIyNTE5NCwibGFzdExvZ2luIjowfX0.OQrbnjdYk9glBP9i5OWhAdReOh_8i8zd5JJtcnOrfL0") // nolint: lll
+
+	if tx.VerifyJWT(token) {
+		t.Error("JWT verified with bad secret")
+	}
+
+	token = []byte("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ1c2Vyc2QiLCJzdWIiOiJ0ZXN0IiwiaWF0IjoxNTQ2MjI1MTk0LCJ1c2VyIjp7ImlkIjoxLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJtb2RlIjoibG9jYWwiLCJ2ZXJpZmllZCI6ZmFsc2UsImNyZWF0ZWRBdCI6MTU0NjIyNTE5NCwibGFzdExvZ2luIjowfX0.6b5UTIoKSR1GFbbNAYWaJKPMtxtB-f6supzoRL2d2C4") // nolint: lll
+
+	if tx.VerifyJWT(token) {
+		t.Error("Invalid JWT verified")
+	}
+
+	token = []byte("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ1c2Vyc2QiLCJzdWIiOiJ0ZXN0IiwiaWF0IjoxNTQ2MjI1MTk0LCJleHAiOjEsInVzZXIiOnsiaWQiOiJ0ZXN0IiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwibW9kZSI6ImxvY2FsIiwidmVyaWZpZWQiOmZhbHNlLCJjcmVhdGVkQXQiOjE1NDYyMjUxOTQsImxhc3RMb2dpbiI6MH19.33ytJ2KPAi8kX5a071jpbQ-2LeutwVgzJTr-SGvKm8A") // nolint: lll
+
+	if tx.VerifyJWT(token) {
+		t.Error("Expired JWT verified")
+	}
+
+	token = []byte("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ1c2Vyc2QiLCJzdWIiOiJ0ZXN0IiwiaWF0IjoxNTQ2MjI1MTk0LCJ1c2VyIjp7ImlkIjoidGVzdCIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsIm1vZGUiOiJsb2NhbCIsInZlcmlmaWVkIjpmYWxzZSwiY3JlYXRlZEF0IjoxNTQ2MjI1MTk0LCJsYXN0TG9naW4iOjB9fQ.CE6an7tDnzsEsq2aexjln5uUuG5Rtju6ObDqgbTLDro") // nolint: lll
 
 	if !tx.VerifyJWT(token) {
 		t.Error("Can't verify valid JWT")

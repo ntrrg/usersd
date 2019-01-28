@@ -35,12 +35,12 @@ func Restore(r io.Reader) error {
 	}
 
 	for _, hit := range res.Hits {
-		if err := usersd.index.Delete(hit.ID); err != nil {
+		if err = usersd.index.Delete(hit.ID); err != nil {
 			return err
 		}
 	}
 
-	tx := NewTx(false)
+	tx := NewTx(true)
 	defer tx.Discard()
 
 	users, err := tx.GetUsers("")

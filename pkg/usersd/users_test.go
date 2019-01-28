@@ -132,6 +132,23 @@ func TestTx_GetUsers_sorted(t *testing.T) {
 	}
 }
 
+func TestTx_GetUsers_closedIndex(t *testing.T) {
+	if err := initTest("tx-get-users-closed-index", true); err != nil {
+		t.Fatal(err)
+	}
+
+	tx := usersd.NewTx(true)
+	defer tx.Discard()
+
+	if err := usersd.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := tx.GetUsers("+id:admin"); err == nil {
+		t.Error("Getting users with a closed search index")
+	}
+}
+
 func TestTx_GetUsers_outdatedIndex(t *testing.T) {
 	if err := initTest("tx-get-users-outdated-index", true); err != nil {
 		t.Fatal(err)
@@ -232,6 +249,21 @@ func TestTx_DeleteUser_roTx(t *testing.T) {
 
 	if err := tx.DeleteUser(""); err == nil {
 		t.Error("Removing user with read-only transaction")
+	}
+}
+
+func TestTx_ValidateUser_discartedTx(t *testing.T) {
+	if err := initTest("tx-validate-user-discarted", false); err != nil {
+		t.Fatal(err)
+	}
+
+	defer usersd.Close()
+
+	tx := usersd.NewTx(false)
+	tx.Discard()
+
+	if err := tx.ValidateUser(&usersd.User{ID: "test"}); err == nil {
+		t.Error("Validating user with discarted transaction")
 	}
 }
 
