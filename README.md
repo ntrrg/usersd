@@ -3,8 +3,6 @@
 [![GolangCI](https://golangci.com/badges/github.com/ntrrg/usersd.svg)](https://golangci.com/r/github.com/ntrrg/usersd)
 [![GoDoc](https://godoc.org/github.com/ntrrg/usersd/pkg/usersd?status.svg)](https://godoc.org/github.com/ntrrg/usersd/pkg/usersd)
 [![BCH compliance](https://bettercodehub.com/edge/badge/ntrrg/usersd?branch=master)](https://bettercodehub.com/results/ntrrg/usersd)
-[![Docker Build Status](https://img.shields.io/docker/build/ntrrg/usersd.svg)](https://cloud.docker.com/u/ntrrg/repository/docker/ntrrg/usersd)
-[![](https://images.microbadger.com/badges/image/ntrrg/usersd.svg)](https://microbadger.com/images/ntrrg/usersd)
 
 **usersd** is an authentication and authorization microservice.
 
