@@ -27,34 +27,7 @@ func Restore(r io.Reader) error {
 		return err
 	}
 
-	bq := bleve.NewMatchAllQuery()
-	req := bleve.NewSearchRequest(bq)
-	res, err := usersd.index.Search(req)
-	if err != nil {
-		return err
-	}
-
-	for _, hit := range res.Hits {
-		if err = usersd.index.Delete(hit.ID); err != nil {
-			return err
-		}
-	}
-
-	tx := NewTx(true)
-	defer tx.Discard()
-
-	users, err := tx.GetUsers("")
-	if err != nil {
-		return err
-	}
-
-	for _, user := range users {
-		if err = tx.WriteUser(user); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return reloadIndex()
 }
 
 // Tx wraps a complete context for doing user management operations.
@@ -78,6 +51,23 @@ func (tx *Tx) Get(key []byte) ([]byte, error) {
 	}
 
 	return item.ValueCopy(nil)
+}
+
+func cleanIndex() error {
+	bq := bleve.NewMatchAllQuery()
+	req := bleve.NewSearchRequest(bq)
+	res, err := usersd.index.Search(req)
+	if err != nil {
+		return err
+	}
+
+	for _, hit := range res.Hits {
+		if err = usersd.index.Delete(hit.ID); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func openDB(dir string) (*badger.DB, error) {
@@ -120,6 +110,28 @@ func openIndex(dir string) (bleve.Index, error) {
 	}
 
 	return index, nil
+}
+
+func reloadIndex() error {
+	if err := cleanIndex(); err != nil {
+		return err
+	}
+
+	tx := NewTx(true)
+	defer tx.Discard()
+
+	users, err := tx.GetUsers("")
+	if err != nil {
+		return err
+	}
+
+	for _, user := range users {
+		if err = tx.WriteUser(user); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 type bl struct{}
