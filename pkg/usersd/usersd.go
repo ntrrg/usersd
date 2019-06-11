@@ -6,6 +6,7 @@ package usersd
 import (
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/blevesearch/bleve"
 	"github.com/dgraph-io/badger"
@@ -21,6 +22,8 @@ var usersd struct {
 
 // DefaultOptions are commonly used options for a simple Init call.
 var DefaultOptions = Options{
+	EmailVerificationCodesTTL: 5 * time.Minute,
+
 	PasswdOpts: PasswordOptions{
 		SaltSize: 32,
 		Time:     1,
@@ -39,6 +42,9 @@ var DefaultOptions = Options{
 type Options struct {
 	// Database location.
 	Database string
+
+	// Expiration time for email verification codes.
+	EmailVerificationCodesTTL time.Duration
 
 	// Password authentication options.
 	PasswdOpts PasswordOptions

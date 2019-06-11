@@ -9,7 +9,7 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
-// Passwords documents identifier.
+// Password document identifier.
 const PasswordsDI = "passwords"
 
 // PasswordOptions wraps variables that control the passwords hashing algorithm

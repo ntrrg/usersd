@@ -1,0 +1,11 @@
+syntax = "proto3";
+package usersd;
+
+message UserPb {
+  string id        = 1;
+  string username  = 2;
+  bool   status    = 3;
+  int64  createdAt = 4;
+  bytes  data      = 5;
+}
+

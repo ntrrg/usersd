@@ -10,7 +10,7 @@ import (
 	"github.com/dgraph-io/badger"
 )
 
-// Users documents identifier.
+// User document identifier.
 const UsersDI = "users"
 
 const defaultUserMode = "local"
