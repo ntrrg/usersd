@@ -1,46 +1,44 @@
 # Contributing Guide
 
-Any contribution means implicitly that you accept the [code of conduct](CODE_OF_CONDUCT.md)
-from this project.
+Any contribution to this project means implicitly that you accept the
+[code of conduct](CODE_OF_CONDUCT.md) from this project.
 
-## As user
+## Requirements
 
-You can help just using this software and giving some feedback as is described
-in [this section](#as-tester), if you feel uncomfortable with that, just send
-an [email](mailto:ntrrgx@gmail.com?Subject=usersd:%20) with this template:
+[Go]: https://golang.org/dl/
+[GolangCI Lint]: https://github.com/golangci/golangci-lint/releases
 
-### Comment
+* [Go][] >= 1.12
 
-**To:** `ntrrgx@gmail.com`
+* [GolangCI Lint][] >= 1.16
 
-**Subject:** `usersd: Short comment description`
+## Guidelines
 
-**Body:** free to you.
+* **Git commit messages:** <https://chris.beams.io/posts/git-commit/>;
+  additionally any commit must be scoped to the component where changes were
+  made, which is prefixing the message with the component name, e.g.
+  `api/rest: Do something`.
 
-### Issues
+* **Git branching model:** <https://guides.github.com/introduction/flow/>.
 
-**To:** `ntrrgx@gmail.com`
+* **Version number bumping:** <https://semver.org/>.
 
-**Subject:** `usersd: Short issue description`
+* **Changelog format:** <http://keepachangelog.com/>.
 
-**Body:** detailed issue description with screenshots or other things that help
-you show how you get the unexpected behavior.
+* **Go code guidelines:** <https://golang.org/doc/effective_go.html>.
 
-## As tester
+## Instructions
 
-[GitHub Issue Tracker]: https://github.com/ntrrg/usersd/issues
+1. Create a new branch with a short name that describes the changes that you
+   intend to do. If you don't have permissions to create branches, fork the
+   project and do the same in your forked copy.
 
-If you can do some stuff in the terminal and you are familiar with the
-[GitHub Issue Tracker][], you are already a tester. In case you find a bug,
-know better approaches than the used in this code or just want to ask for a
-feature, all you need to do is go to the [GitHub Issue Tracker][] and create a
-new entry in there.
+2. Do any change you need to do and add the respective tests.
 
-## As developer
+3. (Optional) Run `./mage ci:race` (or `./mage ci:default` if your platform
+   doesn't support the Go's race conditions detector) in the project root
+   folder to verify that everything is working.
 
-<https://chris.beams.io/posts/git-commit/>
-
-<https://semver.org/>
-
-<http://keepachangelog.com/>
+4. Create a [pull request](https://github.com/ntrrg/usersd/compare) to the
+   `master` branch.
 
