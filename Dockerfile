@@ -1,14 +1,13 @@
-FROM golang:1.11-alpine3.8 AS build
-RUN apk update && apk add git
+FROM golang:1.13.4-alpine3.10 AS build
+RUN apk update && apk add make
 WORKDIR /src
 COPY . .
-RUN ./mage
+RUN make
 
 FROM scratch
-COPY --from=build /src/dist /bin
-VOLUME "/data"
-EXPOSE 4000
+COPY --from=build /src/dist/usersd-linux-amd64 /bin/usersd
 USER 1000
-ENTRYPOINT ["/bin/usersd"]
-CMD ["--db", "/data"]
+EXPOSE 4000
+VOLUME "/var/usersd"
+ENTRYPOINT ["/bin/usersd", "--db", "/var/usersd"]
 

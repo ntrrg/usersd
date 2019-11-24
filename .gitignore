@@ -1,11 +1,20 @@
-*.sublime*
-*.sw[op]
-*.vim
 nogit-*
-.DS_Store
-coverage.txt
-.screenrc
 dist/
+
+# MacOS
+.DS_Store
+
+# Sublime Text
+*.sublime*
+
+# GNU Screen
+.screenrc
+
+# Vim
+*.sw[op]
+Session.vim
 *~
-vendor/github.com/blevesearch/go-porterstemmer/porterstemmer_has_suffix.go
+
+# Go
+coverage.txt
 

@@ -4,16 +4,25 @@
 package main
 
 import (
+	"fmt"
+)
+
+func main() {
+	fmt.Println("hello, world!")
+}
+
+/*
+import (
 	"flag"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 
-	nthttp "github.com/ntrrg/ntgo/net/http"
+	nthttp "nt.web.ve/go/ntgo/net/http"
 
-	"github.com/ntrrg/usersd/api/rest"
-	"github.com/ntrrg/usersd/pkg/usersd"
+	"nt.web.ve/go/usersd/api/rest"
+	"nt.web.ve/go/usersd/pkg/usersd"
 )
 
 func main() {
@@ -84,3 +93,4 @@ func main() {
 
 	<-server.Done
 }
+*/

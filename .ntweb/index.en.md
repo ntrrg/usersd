@@ -1,14 +1,10 @@
 ---
 title: usersd
 description: Authentication and authorization microservice.
-metadata:
-  source-code: https://github.com/ntrrg/usersd
-  license: WTFPL
-kinds:
+tags:
   - daemon
   - cli
   - rest-server
-techs:
   - mage
   - go
   - golangci

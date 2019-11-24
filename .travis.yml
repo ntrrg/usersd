@@ -3,21 +3,26 @@ dist: xenial
 git:
   depth: 1
 language: go
-go: "1.11.5"
+go:
+  - "1.13"
 env:
   - GO111MODULE=on
+before_install:
+  - go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.21.0
 jobs:
   include:
-    - script: ./mage -v test
+    - script: make test-race
     - stage: "QA"
       name: "Linting"
-      script: ./mage -v lint
+      script: make lint
+    - name: "Code Analysis"
+      script: make ca
     - name: "Tests coverage"
-      script: ./mage -v coverage:default
+      script: make coverage
     - name: "Benckmarks"
-      script: ./mage -v benchmark
-    - stage: "Deploy"
-      script: ./mage -v build
+      script: make benchmark
+    - stage: "Build"
+      script: make build
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 

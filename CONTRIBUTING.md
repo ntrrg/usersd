@@ -7,10 +7,16 @@ Any contribution to this project means implicitly that you accept the
 
 [Go]: https://golang.org/dl/
 [GolangCI Lint]: https://github.com/golangci/golangci-lint/releases
+[GNU Make]: https://www.gnu.org/software/make/
+[reflex]: https://github.com/cespare/reflex
 
-* [Go][] >= 1.12
+* [Go][] >= 1.13
 
-* [GolangCI Lint][] >= 1.16
+* [GolangCI Lint][] = 1.21.\*
+
+* [GNU Make][] >= 4.2 (Optional, building tool)
+
+* [reflex][] >= 0.2 (Optional, filesystem watching)
 
 ## Guidelines
 
@@ -35,9 +41,9 @@ Any contribution to this project means implicitly that you accept the
 
 2. Do any change you need to do and add the respective tests.
 
-3. (Optional) Run `./mage ci:race` (or `./mage ci:default` if your platform
-   doesn't support the Go's race conditions detector) in the project root
-   folder to verify that everything is working.
+3. (Optional) Run `make ci-race` (or `make ci` if your platform doesn't support
+   the Go's race conditions detector) in the project root folder to verify that
+   everything is working.
 
 4. Create a [pull request](https://github.com/ntrrg/usersd/compare) to the
    `master` branch.
