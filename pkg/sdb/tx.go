@@ -75,6 +75,7 @@ func (tx *Tx) Delete(key []byte) error {
 	}
 
 	tx.operations[string(key)] = nil
+
 	return nil
 }
 
@@ -155,5 +156,6 @@ func (tx *Tx) Set(key []byte, val interface{}) error {
 	}
 
 	tx.operations[string(key)] = val
+
 	return nil
 }

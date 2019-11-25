@@ -131,6 +131,7 @@ func getData(db *sdb.DB) {
 	fmt.Printf("Get -> %s: %s\n", p2.ID, p2.Name)
 
 	q := "Name:miguel"
+
 	keys, err := tx.Find(q) // Any document with "miguel" in its name.
 	if err != nil {
 		panic(err)
@@ -139,6 +140,7 @@ func getData(db *sdb.DB) {
 	fmt.Printf("Find -> (%s): %q\n", q, keys)
 
 	q = "Email:example.com"
+
 	keys, err = tx.Find(q) // Any document with "example.com" as email.
 	if err != nil {
 		panic(err)

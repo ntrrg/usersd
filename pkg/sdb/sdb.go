@@ -37,6 +37,7 @@ func Open(dir string) (*DB, error) {
 	}
 
 	opts := DefaultOptions(dir)
+
 	return OpenWith(opts)
 }
 
@@ -66,6 +67,7 @@ func OpenWith(opts Options) (*DB, error) {
 	}
 
 	db.opts = opts
+
 	return db, nil
 }
 
@@ -90,6 +92,7 @@ func (db *DB) Close() error {
 func openDB(opts badger.Options) (*badger.DB, error) {
 	opts.Logger = &bl{}
 	opts.Compression = options.Snappy
+
 	return badger.Open(opts)
 }
 

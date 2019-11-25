@@ -10,7 +10,6 @@ import (
 	"github.com/dgraph-io/badger/v2"
 )
 
-// Errors
 var (
 	ErrKeyNotFound = badgerError(badger.ErrKeyNotFound)
 )

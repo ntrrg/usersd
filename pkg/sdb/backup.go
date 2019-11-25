@@ -20,8 +20,11 @@ func (db *DB) ReloadIndex() error {
 	defer it.Close()
 
 	for it.Rewind(); it.Valid(); it.Next() {
-		var val interface{}
-		key := it.Item().Key()
+		var (
+			val interface{}
+			key = it.Item().Key()
+		)
+
 		if err := tx.Get(key, &val); err != nil {
 			return badgerError(err)
 		}
@@ -37,6 +40,7 @@ func (db *DB) ReloadIndex() error {
 func (db *DB) cleanIndex() error {
 	bq := bleve.NewMatchAllQuery()
 	req := bleve.NewSearchRequest(bq)
+
 	res, err := db.si.Search(req)
 	if err != nil {
 		return bleveError(err)

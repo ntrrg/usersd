@@ -39,7 +39,7 @@ func TestDB_ReloadIndex(t *testing.T) {
 	defer tx2.Discard()
 
 	keys, errFind := tx2.Find("Data:lorem")
-	if err != nil {
+	if errFind != nil {
 		t.Fatal(errFind)
 	}
 

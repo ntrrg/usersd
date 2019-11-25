@@ -101,6 +101,7 @@ func TestOpenWith_fillBufferPool(t *testing.T) {
 	opts := sdb.DefaultOptions(dir)
 	opts.BufferPoolSize = 5
 	opts.BufferPoolFill = true
+
 	db, err := sdb.OpenWith(opts)
 	if err != nil {
 		t.Fatal(err)
