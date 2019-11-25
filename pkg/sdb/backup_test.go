@@ -10,7 +10,7 @@ import (
 )
 
 func TestDB_ReloadIndex(t *testing.T) {
-	db, err := initTest("reload-search-index")
+	db, err := sdb.Open(sdb.InMemory)
 	if err != nil {
 		t.Fatal(err)
 	}

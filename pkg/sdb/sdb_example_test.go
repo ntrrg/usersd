@@ -69,8 +69,6 @@ func Example() {
 	peopleMapping.AddFieldMappingsAt("Doctype", keywordField)
 	// Without this, 'rrg' would match with 'ntrrg', 'atrrg', etc...
 	peopleMapping.AddFieldMappingsAt("ID", keywordField)
-	// Without this, 'example.com' would match any person with an email from this
-	// domain.
 	peopleMapping.AddFieldMappingsAt("Email", keywordField)
 	// Without this, boolean fields couldn't be compared with 'true' of 'false'.
 	peopleMapping.AddFieldMappingsAt("Alive", keywordField)
@@ -85,7 +83,7 @@ func Example() {
 	// If no advanced options are needed, all the previous lines could be
 	// replaced by:
 	//
-	//   db, err := sdb.Open("")
+	//   db, err := sdb.Open("/path/to/database")
 	//   if err != nil {
 	//     panic(err)
 	//   }

@@ -41,7 +41,7 @@ func TestOpen_badTemporaryFS(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	db, err := sdb.Open("")
+	db, err := sdb.Open(sdb.InMemory)
 	if err == nil {
 		defer db.Close()
 		t.Error("Database initialized on invalid temporary filesystem")
@@ -93,12 +93,11 @@ func TestOpen_forbiddenIndex(t *testing.T) {
 }
 
 func TestOpenWith_fillBufferPool(t *testing.T) {
-	dir := filepath.Join(testDir, "open-with-fill-buffer-pool")
-	if err := os.Mkdir(dir, 0755); err != nil {
+	opts, err := sdb.MemoryOptions()
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	opts := sdb.DefaultOptions(dir)
 	opts.BufferPoolSize = 5
 	opts.BufferPoolFill = true
 
@@ -117,15 +116,4 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-}
-
-// Test helpers
-
-func initTest(name string) (*sdb.DB, error) {
-	dir := filepath.Join(testDir, name)
-	if err := os.Mkdir(dir, 0755); err != nil {
-		return nil, err
-	}
-
-	return sdb.Open(dir)
 }

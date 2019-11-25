@@ -4,7 +4,6 @@
 package sdb
 
 import (
-	"io/ioutil"
 	"log"
 
 	"github.com/blevesearch/bleve"
@@ -26,18 +25,16 @@ type DB struct {
 
 // Open initializes a database in the given directory.
 func Open(dir string) (*DB, error) {
-	var err error
-
-	if dir == "" {
-		dir, err = ioutil.TempDir("", "sdb")
+	if dir == InMemory {
+		opts, err := MemoryOptions()
 		if err != nil {
 			return nil, err
 		}
+
+		return OpenWith(opts)
 	}
 
-	opts := DefaultOptions(dir)
-
-	return OpenWith(opts)
+	return OpenWith(DefaultOptions(dir))
 }
 
 // OpenWith initializes a database with the given options.
@@ -102,6 +99,10 @@ func openSearchIndex(opts BleveOptions) (bleve.Index, error) {
 
 		for t, m := range opts.DocMappings {
 			mapping.AddDocumentMapping(t, m)
+		}
+
+		if opts.Dir == InMemory {
+			return bleve.NewMemOnly(mapping)
 		}
 
 		return bleve.New(opts.Dir, mapping)

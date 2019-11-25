@@ -4,6 +4,7 @@
 package sdb
 
 import (
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 )
 
 const (
+	InMemory       = ""
 	DatabaseDir    = "database"
 	SearchIndexDir = "search-index"
 )
@@ -57,9 +59,28 @@ func DefaultOptions(dir string) Options {
 		},
 
 		BufferPoolSize:     500,
-		BufferPoolMaxBytes: 5 * 1024,
+		BufferPoolMaxBytes: 5 * 1024, // 5 KiB
 		BufferPoolFill:     false,
 
 		Logger: log.New(os.Stderr, "sdb: ", log.LstdFlags),
 	}
+}
+
+// MemoryOptions returns options tweaked for running a DB instance in memory.
+func MemoryOptions() (Options, error) {
+	dir, err := ioutil.TempDir("", "sdb-tmp")
+	if err != nil {
+		return Options{}, err
+	}
+
+	opts := DefaultOptions(dir)
+
+	opts.Badger.SyncWrites = false
+	opts.Badger.TableLoadingMode = options.LoadToRAM
+	opts.Badger.ValueLogLoadingMode = options.MemoryMap
+	opts.Badger.ValueThreshold = 1 * 1024 * 1024 // 1 MiB
+
+	opts.Bleve.Dir = InMemory
+
+	return opts, nil
 }

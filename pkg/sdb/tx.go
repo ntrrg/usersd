@@ -137,7 +137,8 @@ func (tx *Tx) Get(key []byte, v interface{}) error {
 }
 
 // Set set val as value of the given key. This operation happens in memory, it
-// will be written to the database once Commit is called.
+// will be written to the database once Commit is called. Since values are
+// encoded with JSON, struct tags will define what fields are stored.
 func (tx *Tx) Set(key []byte, val interface{}) error {
 	buf := tx.db.buffers.Get()
 	defer tx.db.buffers.Add(buf)
