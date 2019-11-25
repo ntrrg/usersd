@@ -9,7 +9,6 @@ import (
 
 	"github.com/blevesearch/bleve"
 	"github.com/dgraph-io/badger/v2"
-	"github.com/dgraph-io/badger/v2/options"
 	ntbytes "nt.web.ve/go/ntgo/bytes"
 )
 
@@ -91,7 +90,6 @@ func (db *DB) Close() error {
 
 func openDB(opts badger.Options) (*badger.DB, error) {
 	opts.Logger = &bl{}
-	opts.Compression = options.Snappy
 
 	return badger.Open(opts)
 }

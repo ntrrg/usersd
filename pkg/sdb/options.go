@@ -10,6 +10,7 @@ import (
 
 	"github.com/blevesearch/bleve/mapping"
 	"github.com/dgraph-io/badger/v2"
+	"github.com/dgraph-io/badger/v2/options"
 )
 
 const (
@@ -42,9 +43,12 @@ type Options struct {
 func DefaultOptions(dir string) Options {
 	dir = filepath.Clean(dir)
 
+	badgerOpts := badger.DefaultOptions(filepath.Join(dir, DatabaseDir))
+	badgerOpts.Compression = options.None
+
 	return Options{
 		Directory: dir,
-		Badger:    badger.DefaultOptions(filepath.Join(dir, DatabaseDir)),
+		Badger:    badgerOpts,
 
 		Bleve: BleveOptions{
 			Dir:          filepath.Join(dir, SearchIndexDir),
