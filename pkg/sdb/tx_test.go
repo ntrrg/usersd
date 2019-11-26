@@ -4,10 +4,36 @@
 package sdb_test
 
 import (
+	"errors"
+	"fmt"
 	"testing"
 
+	"github.com/dgraph-io/badger/v2"
 	"nt.web.ve/go/usersd/pkg/sdb"
 )
+
+func TestTx_bigTransaction(t *testing.T) {
+	db, err := sdb.Open(sdb.InMemory)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := db.NewTx(sdb.RW)
+	defer tx.Discard()
+
+	data := "lorem ipsum"
+
+	for i := 0; ; i++ {
+		if err = tx.Set([]byte(fmt.Sprintf("test-%v", i)), &data); err != nil {
+			break
+		}
+	}
+
+	err = tx.Set([]byte("test"), &data)
+	if !errors.Is(err, badger.ErrTxnTooBig) {
+		t.Error("Big transaction allowed")
+	}
+}
 
 func TestTx_Set_nonPointer(t *testing.T) {
 	db, err := sdb.Open(sdb.InMemory)

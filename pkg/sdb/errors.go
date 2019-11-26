@@ -15,6 +15,7 @@ var (
 	ErrValMustBePointer = errors.New("can't encode data, must be a pointer")
 
 	ErrKeyNotFound = badgerError(badger.ErrKeyNotFound)
+	ErrTxnTooBig   = badgerError(badger.ErrTxnTooBig)
 )
 
 // IsBadgerError returns true if the given error is from Badger.
