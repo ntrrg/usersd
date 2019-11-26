@@ -49,15 +49,16 @@ doc-go:
 	godoc -http :$(godocPort) -play
 
 dist/%: $(goSrcFiles)
-	CGO_ENABLED=0 go build -o "dist/$*" .
+	go build -o "dist/$*" .
 
 # Development
 
 coverage_file := coverage.txt
+CI_TARGET ?= ./...
 
 .PHONY: benchmark
 benchmark:
-	go test -v -bench . -benchmem ./...
+	go test -v -bench . -benchmem $(CI_TARGET)
 
 .PHONY: ca
 ca:
@@ -91,11 +92,11 @@ lint:
 
 .PHONY: test
 test:
-	go test -v ./...
+	go test -v $(CI_TARGET)
 
 .PHONY: test-race
 test-race:
-	go test -race -v ./...
+	go test -race -v $(CI_TARGET)
 
 .PHONY: watch
 watch:
@@ -106,5 +107,5 @@ watch-race:
 	reflex -d "none" -r '\.go$$' -- $(MAKE) -s test-race lint
 
 $(coverage_file): $(goSrcFiles) $(goTestFiles)
-	go test -coverprofile $(coverage_file) ./...
+	go test -coverprofile $(coverage_file) $(CI_TARGET)
 
