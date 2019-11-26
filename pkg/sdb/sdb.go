@@ -38,10 +38,8 @@ func Open(dir string) (*DB, error) {
 }
 
 // OpenWith initializes a database with the given options.
-func OpenWith(opts Options) (*DB, error) {
-	var err error
-
-	db := new(DB)
+func OpenWith(opts Options) (db *DB, err error) {
+	db = new(DB)
 
 	db.buffers = ntbytes.NewBufferPool(
 		opts.BufferPoolSize,

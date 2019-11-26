@@ -23,7 +23,7 @@ func TestDB_ReloadIndex(t *testing.T) {
 	key := []byte("test")
 	data := struct{ Data string }{Data: "lorem ipsum"}
 
-	if errSet := tx.Set(key, data); err != nil {
+	if errSet := tx.Set(key, &data); err != nil {
 		t.Fatal(errSet)
 	}
 
@@ -31,7 +31,17 @@ func TestDB_ReloadIndex(t *testing.T) {
 		t.Fatal(errCommit)
 	}
 
-	if errReload := db.ReloadIndex(); err != nil {
+	f := func(tx *sdb.Tx, key []byte) (interface{}, error) {
+		var val struct{ Data string }
+
+		if errDF := tx.Get(key, &val); err != nil {
+			return nil, errDF
+		}
+
+		return val, nil
+	}
+
+	if errReload := db.ReloadIndex(f); err != nil {
 		t.Fatal(errReload)
 	}
 

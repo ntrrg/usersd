@@ -8,7 +8,12 @@ import (
 	"github.com/dgraph-io/badger/v2"
 )
 
-func (db *DB) ReloadIndex() error {
+type DecoderFunc func(tx *Tx, key []byte) (interface{}, error)
+
+// ReloadIndex recreates the search index, it takes a decoder function as
+// argument, this is necessary since it is not possible to decode one type into
+// another.
+func (db *DB) ReloadIndex(f DecoderFunc) error {
 	if err := db.cleanIndex(); err != nil {
 		return err
 	}
@@ -20,13 +25,11 @@ func (db *DB) ReloadIndex() error {
 	defer it.Close()
 
 	for it.Rewind(); it.Valid(); it.Next() {
-		var (
-			val interface{}
-			key = it.Item().Key()
-		)
+		key := it.Item().Key()
 
-		if err := tx.Get(key, &val); err != nil {
-			return badgerError(err)
+		val, err := f(tx, key)
+		if err != nil {
+			return err
 		}
 
 		if err := tx.si.Index(string(key), val); err != nil {

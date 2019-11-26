@@ -4,11 +4,11 @@
 package sdb
 
 import (
-	"encoding/json"
 	"errors"
 
 	"github.com/blevesearch/bleve"
 	"github.com/dgraph-io/badger/v2"
+	"github.com/niubaoshu/gotiny"
 )
 
 const (
@@ -115,8 +115,8 @@ func (tx *Tx) Find(q string, sort ...string) ([][]byte, error) {
 	return result, nil
 }
 
-// Get reads the value from the given key and decodes it into v (must be a
-// pointer).
+// Get reads the value from the given key and decodes it into v. v must be a
+// pointer.
 func (tx *Tx) Get(key []byte, v interface{}) error {
 	item, err := tx.dbTx.Get(key)
 	if errors.Is(err, badger.ErrKeyNotFound) {
@@ -130,25 +130,26 @@ func (tx *Tx) Get(key []byte, v interface{}) error {
 
 	data, err := item.ValueCopy(buf.Bytes())
 	if err != nil {
-		return err
+		return badgerError(err)
 	}
 
-	return json.Unmarshal(data, v)
+	gotiny.Unmarshal(data, v)
+
+	return nil
 }
 
-// Set set val as value of the given key. This operation happens in memory, it
-// will be written to the database once Commit is called. Since values are
-// encoded with JSON, struct tags will define what fields are stored.
-func (tx *Tx) Set(key []byte, val interface{}) error {
-	buf := tx.db.buffers.Get()
-	defer tx.db.buffers.Add(buf)
+// Set set v as value of the given key. This operation happens in memory, it
+// will be written to the database once Commit is called. v must be a pointer.
+func (tx *Tx) Set(key []byte, v interface{}) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = ErrValMustBePointer
+		}
+	}()
 
-	e := json.NewEncoder(buf)
-	if err := e.Encode(val); err != nil {
-		return err
-	}
+	data := gotiny.Marshal(v)
 
-	if err := tx.dbTx.Set(key, buf.Bytes()); err != nil {
+	if err = tx.dbTx.Set(key, data); err != nil {
 		return badgerError(err)
 	}
 
@@ -156,7 +157,7 @@ func (tx *Tx) Set(key []byte, val interface{}) error {
 		tx.operations = make(map[string]interface{})
 	}
 
-	tx.operations[string(key)] = val
+	tx.operations[string(key)] = v
 
 	return nil
 }

@@ -27,6 +27,8 @@ type Person struct {
 	Car      Car
 	Family   []Person
 
+	Data map[string]interface{}
+
 	Doctype string // Search index document type.
 }
 
@@ -47,6 +49,17 @@ var p = Person{
 	Family: []Person{
 		{ID: "alirio", Name: "Alirio Rivera"},
 		{ID: "assdro", Name: "Alessandro Notararigo"},
+	},
+
+	Data: map[string]interface{}{
+		"anime": []string{
+			"One Piece",
+			"Fullmetal Alchemist",
+			"Fate",
+			"Hellsing",
+			"Naruto",
+			"Dragon Ball",
+		},
 	},
 
 	Doctype: "people",
@@ -99,7 +112,7 @@ func Example() {
 	// Output:
 	// Initial -> ntrrg: Miguel Angel Rivera Notararigo
 	// Get -> ntrrg: Miguel Angel Rivera Notararigo
-	// Find -> (Name:miguel): ["ntrrg"]
+	// Find -> (Data.anime:"One Piece"): ["ntrrg"]
 	// Find -> (Email:example.com): []
 	// Delete -> ntrrg: Not found
 }
@@ -108,7 +121,7 @@ func writeData(db *sdb.DB) {
 	tx := db.NewTx(sdb.RW)
 	defer tx.Discard()
 
-	if err := tx.Set([]byte(p.ID), p); err != nil {
+	if err := tx.Set([]byte(p.ID), &p); err != nil {
 		panic(err)
 	}
 
@@ -128,9 +141,9 @@ func getData(db *sdb.DB) {
 
 	fmt.Printf("Get -> %s: %s\n", p2.ID, p2.Name)
 
-	q := "Name:miguel"
+	q := `Data.anime:"One Piece"`
 
-	keys, err := tx.Find(q) // Any document with "miguel" in its name.
+	keys, err := tx.Find(q)
 	if err != nil {
 		panic(err)
 	}

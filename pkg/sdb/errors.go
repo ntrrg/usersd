@@ -4,6 +4,7 @@
 package sdb
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -11,6 +12,8 @@ import (
 )
 
 var (
+	ErrValMustBePointer = errors.New("can't encode data, must be a pointer")
+
 	ErrKeyNotFound = badgerError(badger.ErrKeyNotFound)
 )
 
