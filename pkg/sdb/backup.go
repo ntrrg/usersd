@@ -4,7 +4,6 @@
 package sdb
 
 import (
-	"github.com/blevesearch/bleve"
 	"github.com/dgraph-io/badger/v2"
 )
 
@@ -41,16 +40,12 @@ func (db *DB) ReloadIndex(f DecoderFunc) error {
 }
 
 func (db *DB) cleanIndex() error {
-	bq := bleve.NewMatchAllQuery()
-	req := bleve.NewSearchRequest(bq)
+	tx := db.NewTx(RO)
+	defer tx.Discard()
 
-	res, err := db.si.Search(req)
-	if err != nil {
-		return bleveError(err)
-	}
-
-	for _, hit := range res.Hits {
-		if err = db.si.Delete(hit.ID); err != nil {
+	result, err := tx.Find("")
+	for _, id := range result {
+		if err = db.si.Delete(string(id)); err != nil {
 			return bleveError(err)
 		}
 	}

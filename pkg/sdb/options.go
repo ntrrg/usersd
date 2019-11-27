@@ -20,16 +20,10 @@ const (
 	SearchIndexDir = "search-index"
 )
 
-type BleveOptions struct {
-	Dir          string
-	DoctypeField string
-	DocMappings  map[string]*mapping.DocumentMapping
-}
-
 // Options are parameters for initializing a database.
 type Options struct {
 	// Database location.
-	Directory string
+	Dir string
 
 	Badger badger.Options
 	Bleve  BleveOptions
@@ -49,8 +43,8 @@ func DefaultOptions(dir string) Options {
 	badgerOpts.Compression = options.None
 
 	return Options{
-		Directory: dir,
-		Badger:    badgerOpts,
+		Dir:    dir,
+		Badger: badgerOpts,
 
 		Bleve: BleveOptions{
 			Dir:          filepath.Join(dir, SearchIndexDir),
@@ -83,4 +77,10 @@ func MemoryOptions() (Options, error) {
 	opts.Bleve.Dir = InMemory
 
 	return opts, nil
+}
+
+type BleveOptions struct {
+	Dir          string
+	DoctypeField string
+	DocMappings  map[string]*mapping.DocumentMapping
 }

@@ -7,6 +7,7 @@ import (
 	"errors"
 
 	"github.com/blevesearch/bleve"
+	"github.com/blevesearch/bleve/search/query"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/niubaoshu/gotiny"
 )
@@ -94,20 +95,26 @@ func (tx *Tx) Discard() {
 // the query language syntax. sort is a list of field names used for sorting,
 // any field prefixed by a hyphen (-) will user reverse order.
 func (tx *Tx) Find(q string, sort ...string) ([][]byte, error) {
-	if q == "" && len(sort) == 0 {
-		return nil, nil
+	var bq query.Query
+
+	if q == "" {
+		bq = bleve.NewMatchAllQuery()
+	} else {
+		bq = bleve.NewQueryStringQuery(q)
 	}
 
-	result := [][]byte{}
-	bq := bleve.NewQueryStringQuery(q)
 	req := bleve.NewSearchRequest(bq)
-	req.SortBy(sort)
+
+	if len(sort) > 0 {
+		req.SortBy(sort)
+	}
 
 	res, err := tx.si.Search(req)
 	if err != nil {
 		return nil, bleveError(err)
 	}
 
+	result := [][]byte{}
 	for _, hit := range res.Hits {
 		result = append(result, []byte(hit.ID))
 	}
@@ -136,6 +143,21 @@ func (tx *Tx) Get(key []byte, v interface{}) error {
 	gotiny.Unmarshal(data, v)
 
 	return nil
+}
+
+// Prefix fetches all the keys from the database with the given prefix.
+func (tx *Tx) Prefix(prefix []byte) [][]byte {
+	it := tx.dbTx.NewIterator(badger.DefaultIteratorOptions)
+	defer it.Close()
+
+	result := [][]byte{}
+	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+		buf := tx.db.buffers.Get()
+		result = append(result, it.Item().KeyCopy(buf.Bytes()))
+		tx.db.buffers.Add(buf)
+	}
+
+	return result
 }
 
 // Set set v as value of the given key. This operation happens in memory, it

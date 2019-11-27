@@ -114,6 +114,7 @@ func Example() {
 	// Get -> ntrrg: Miguel Angel Rivera Notararigo
 	// Find -> (Data.anime:"One Piece"): ["ntrrg"]
 	// Find -> (Email:example.com): []
+	// Prefix -> (nt): ["ntrrg"]
 	// Delete -> ntrrg: Not found
 }
 
@@ -158,6 +159,10 @@ func getData(db *sdb.DB) {
 	}
 
 	fmt.Printf("Find -> (%s): %q\n", q, keys)
+
+	prefix := []byte("nt")
+	keys = tx.Prefix(prefix) // Any key starting with "nt".
+	fmt.Printf("Prefix -> (%s): %q\n", prefix, keys)
 }
 
 func deleteData(db *sdb.DB) {
