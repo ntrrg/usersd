@@ -1,30 +1,61 @@
 run:
   tests: true
-  skip-files:
-    - mage.go
-    - magefile.go
+  timeout: 1m
+  skip-dirs: []
+  skip-files: []
+linters:
+  enable-all: true
+  disable:
+    - depguard
+    - exhaustivestruct
+    - gochecknoglobals
+    - gochecknoinits
+    - gofumpt
+    - gomnd
+    - ifshort
+    - nlreturn
+    - unparam
+    - unused
 linters-settings:
   errcheck:
     check-type-assertions: true
     check-blank: true
-  govet:
-    check-shadowing: true
-  golint:
-    min-confidence: 0
+  gocognit:
+    min-complexity: 10
   gocyclo:
     min-complexity: 10
+  golint:
+    min-confidence: 0
+  govet:
+    check-shadowing: true
+  lll:
+    line-length: 79
   maligned:
     suggest-new: true
   misspell:
     locale: US
-  lll:
-    line-length: 79
-linters:
-  enable-all: true
-  disable:
-    - gochecknoglobals
-    - gochecknoinits
-    - depguard
-    - unparam
-    - unused
+  nestif:
+    min-complexity: 3
+  wsl:
+    strict-append: true
+    allow-assign-and-call: true
+    allow-assign-and-anything: false
+    allow-multiline-assign: false
+    force-case-trailing-whitespace: 0
+    allow-cuddle-declarations: false
+    allow-case-trailing-whitespace: true
+    allow-trailing-comment: false
+    enforce-err-cuddling: true
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - gocognit
+        - goerr113
+        - forbidigo
+        - funlen
+        - lll
+        - testpackage
+        - wrapcheck
 

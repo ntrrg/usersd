@@ -5,25 +5,28 @@ Any contribution to this project means implicitly that you accept the
 
 ## Requirements
 
+[Git]: https://git-scm.com/
 [Go]: https://golang.org/dl/
+
+* [Git][]
+* [Go][] >= 1.16
+
+**Optional:**
+
 [GolangCI Lint]: https://github.com/golangci/golangci-lint/releases
 [GNU Make]: https://www.gnu.org/software/make/
 [reflex]: https://github.com/cespare/reflex
 
-* [Go][] >= 1.13
-
-* [GolangCI Lint][] = 1.21.\*
-
-* [GNU Make][] >= 4.2 (Optional, building tool)
-
-* [reflex][] >= 0.2 (Optional, filesystem watching)
+* [GolangCI Lint][] >= 1.36
+* [GNU Make][] >= 4.3 (build tool)
+* [reflex][] >= 0.2 (filesystem watching)
 
 ## Guidelines
 
 * **Git commit messages:** <https://chris.beams.io/posts/git-commit/>;
   additionally any commit must be scoped to the component where changes were
   made, which is prefixing the message with the component name, e.g.
-  `api/rest: Do something`.
+  `pkg/usersd: Do something`.
 
 * **Git branching model:** <https://guides.github.com/introduction/flow/>.
 

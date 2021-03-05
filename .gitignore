@@ -1,20 +1,33 @@
 nogit-*
+coverage.txt
 dist/
 
-# MacOS
-.DS_Store
+#######################
+# Frameworks and libs #
+#######################
 
-# Sublime Text
-*.sublime*
+#########
+# Tools #
+#########
+
+# Delve
+debug.test
 
 # GNU Screen
 .screenrc
+
+# Sublime Text
+*.sublime*
 
 # Vim
 *.sw[op]
 Session.vim
 *~
 
-# Go
-coverage.txt
+######
+# OS #
+######
+
+# MacOS
+.DS_Store
 

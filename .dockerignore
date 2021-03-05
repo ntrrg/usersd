@@ -1,4 +1,4 @@
 .git/
-pkg/usersd/test-db
 dist/
+pkg/usersd/test-db
 

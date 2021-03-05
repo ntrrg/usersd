@@ -1,111 +1,100 @@
-pkgName := usersd
-hugoPort := 1313
-godocPort := 6060
+module := $(shell go list -m)
+PACKAGE ?= $(notdir $(module))
+HUGO_PORT ?= 1313
+GODOC_PORT ?= 6060
 
-goAllFiles := $(filter-out ./vendor/%, $(shell find . -iname "*.go" -type f))
-goSrcFiles := $(shell go list -f "{{ \$$path := .Dir }}{{ range .GoFiles }}{{ \$$path }}/{{ . }} {{ end }}" ./...)
-goTestFiles := $(shell go list -f "{{ \$$path := .Dir }}{{ range .TestGoFiles }}{{ \$$path }}/{{ . }} {{ end }}" ./...)
+goAllFiles := $(shell find . -iname "*.go" -type f)
+goFiles := $(filter-out ./vendor/%, $(goAllFiles))
+goSrcFiles := $(shell go list -f '{{ range .GoFiles }}{{ $$.Dir }}/{{ . }} {{ end }}' ./...)
+goTestFiles := $(shell go list -f "{{ range .TestGoFiles }}{{ $$.Dir }}/{{ . }} {{ end }}{{ range .XTestGoFiles }}{{ $$.Dir }}/{{ . }} {{ end }}" ./...)
 
 .PHONY: all
 all: build
 
 .PHONY: build
-build: dist/$(pkgName)-$(shell go env "GOOS")-$(shell go env "GOARCH")
-
-.PHONY: build-all
-build-all:
-	$(MAKE) -s build-darwin-386
-	$(MAKE) -s build-darwin-amd64
-	$(MAKE) -s build-linux-386
-	$(MAKE) -s build-linux-amd64
-	$(MAKE) -s build-linux-arm
-	$(MAKE) -s build-linux-arm64
-	$(MAKE) -s build-windows-386
-	$(MAKE) -s build-windows-amd64
-
-.PHONY: build-%
-build-%:
-	@\
-		GOOS="$(shell echo "$*" | cut -d "-" -f 1)" \
-		GOARCH="$(shell echo "$*" | cut -sd "-" -f 2)" \
-		$(MAKE) -s build
+build:
+	go build ./...
 
 .PHONY: clean
-clean:
+clean: clean-dev
 	rm -rf dist/
 
 .PHONY: doc
 doc:
-	@echo "http://localhost:$(hugoPort)/en/projects/$(pkgName)/"
-	@echo "http://localhost:$(hugoPort)/es/projects/$(pkgName)/"
+	@echo "Go to http://localhost:$(HUGO_PORT)/en/projects/$(PACKAGE)/"
 	@docker run --rm -it \
-		-e PORT=$(hugoPort) \
-		-p $(hugoPort):$(hugoPort) \
-		-v "$$PWD/.ntweb":/site/content/projects/$(pkgName)/ \
-		ntrrg/ntweb:editing --port $(hugoPort)
+		-e PORT=$(HUGO_PORT) \
+		-p $(HUGO_PORT):$(HUGO_PORT) \
+		-v "$$PWD/.ntweb":/site/content/projects/$(PACKAGE)/ \
+		ntrrg/ntweb:editing --port $(HUGO_PORT)
 
-.PHONE: doc-go
-doc-go:
-	godoc -http :$(godocPort) -play
-
-dist/%: $(goSrcFiles)
-	go build -o "dist/$*" .
+.PHONE: godoc
+godoc:
+	@echo "Go to http://localhost:$(GODOC_PORT)/pkg/$(module)/"
+	godoc -http :$(GODOC_PORT) -play
 
 # Development
 
-coverage_file := coverage.txt
-CI_TARGET ?= ./...
+COVERAGE_FILE ?= coverage.txt
+TARGET_FUNC ?= .
+TARGET_PKG ?= ./...
 
 .PHONY: benchmark
 benchmark:
-	go test -v -bench . -benchmem $(CI_TARGET)
+	go test -run none -bench "$(TARGET_FUNC)" -benchmem -v $(TARGET_PKG)
 
 .PHONY: ca
 ca:
 	golangci-lint run
 
+.PHONY: ca-fast
+ca-fast:
+	golangci-lint run --fast
+
 .PHONY: ci
-ci: clean-dev test lint ca coverage benchmark build
+ci: test lint ca coverage build
 
 .PHONY: ci-race
-ci-race: clean-dev test-race lint ca coverage benchmark build
+ci-race: test-race lint ca coverage build
 
 .PHONY: clean-dev
 clean-dev: clean
-	rm -rf $(coverage_file)
+	rm -rf $(COVERAGE_FILE)
 
 .PHONY: coverage
-coverage: $(coverage_file)
-	go tool cover -func $<
+coverage:
+	go tool cover -func $(COVERAGE_FILE)
 
 .PHONY: coverage-web
-coverage-web: $(coverage_file)
-	go tool cover -html $<
+coverage-web:
+	go tool cover -html $(COVERAGE_FILE)
 
 .PHONY: format
 format:
-	gofmt -s -w -l $(goAllFiles)
+	gofmt -s -w -l $(goFiles)
 
 .PHONY: lint
 lint:
-	gofmt -d -e -s $(goAllFiles)
+	gofmt -d -e -s $(goFiles)
 
 .PHONY: test
 test:
-	go test -v $(CI_TARGET)
+	go test \
+		-run "$(TARGET_FUNC)" \
+		-coverprofile $(COVERAGE_FILE) \
+		-v $(TARGET_PKG)
 
 .PHONY: test-race
 test-race:
-	go test -race -v $(CI_TARGET)
+	go test \
+		-run "$(TARGET_FUNC)" \
+		-coverprofile $(COVERAGE_FILE) \
+		-race -v $(TARGET_PKG)
 
 .PHONY: watch
 watch:
-	reflex -d "none" -r '\.go$$' -- $(MAKE) -s test lint
+	reflex -d "none" -r '\.go$$' -- $(MAKE) -s build test lint
 
 .PHONY: watch-race
 watch-race:
-	reflex -d "none" -r '\.go$$' -- $(MAKE) -s test-race lint
-
-$(coverage_file): $(goSrcFiles) $(goTestFiles)
-	go test -coverprofile $(coverage_file) $(CI_TARGET)
-
+	reflex -d "none" -r '\.go$$' -- $(MAKE) -s build test-race lint

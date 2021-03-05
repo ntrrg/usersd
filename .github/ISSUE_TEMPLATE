@@ -1,0 +1,21 @@
+(Optional) Provide more detailed explanation about the issue.
+
+<details>
+  <summary>Environment details</summary><br/>
+
+```shell-session
+$ go version
+Paste output here
+```
+
+```shell-session
+$ go env
+Paste output here
+```
+</details>
+
+# Reproduction recipe
+
+Provide the simplest and clearest instructions as possible to reproduce the
+issue.
+

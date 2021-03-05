@@ -2,20 +2,14 @@
 title: usersd
 description: Authentication and authorization microservice.
 tags:
-  - daemon
   - cli
-  - rest-server
-  - mage
+  - rest-api
   - go
-  - golangci
-  - travis
 ---
 
-[![Travis build status](https://travis-ci.com/ntrrg/usersd.svg?branch=master)](https://travis-ci.com/ntrrg/usersd)
+[![GitHub Actions](https://github.com/ntrrg/usersd/workflows/Go/badge.svg)](https://github.com/ntrrg/usersd/actions?query=workflow:Go)
 [![codecov](https://codecov.io/gh/ntrrg/usersd/branch/master/graph/badge.svg)](https://codecov.io/gh/ntrrg/usersd)
-[![GolangCI](https://golangci.com/badges/github.com/ntrrg/usersd.svg)](https://golangci.com/r/github.com/ntrrg/usersd)
-[![GoDoc](https://godoc.org/nt.web.ve/go/usersd/pkg/usersd?status.svg)](https://godoc.org/nt.web.ve/go/usersd/pkg/usersd)
-[![BCH compliance](https://bettercodehub.com/edge/badge/ntrrg/usersd?branch=master)](https://bettercodehub.com/results/ntrrg/usersd)
+[![Go Reference](https://pkg.go.dev/badge/go.ntrrg.dev/usersd.svg)](https://pkg.go.dev/go.ntrrg.dev/usersd)
 
 **usersd** is an authentication and authorization microservice. It was first
 planned as a users management service, but it handles identities instead of
@@ -25,7 +19,7 @@ users, which makes it more flexible and powerful.
 
 If you need help or find a bug, file an issue at the [issue tracker](https://github.com/ntrrg/usersd/issues).
 If using technical tools is not your style, feel free to send us an email at
-ntrrgx@gmail.com.
+support@ntrrg.dev.
 
 # Contributing
 
@@ -81,4 +75,10 @@ Working on this project we use/used:
 * [GolangCI](https://golangci.com)
 
 * [Termux](https://termux.com)
+
+* [Firefox Developer Edition](https://www.mozilla.org/en-US/firefox/developer/)
+
+* [GitHub Actions](https://github.com/features/actions)
+
+* [Alpine](https://alpinelinux.org/)
 

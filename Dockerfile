@@ -1,4 +1,4 @@
-FROM golang:1.13.4-alpine3.10 AS build
+FROM golang:1.16-alpine3.13 AS build
 RUN apk update && apk add make
 WORKDIR /src
 COPY . .

@@ -1,10 +1,8 @@
-[![Travis build status](https://travis-ci.com/ntrrg/usersd.svg?branch=master)](https://travis-ci.com/ntrrg/usersd)
+[![GitHub Actions](https://github.com/ntrrg/usersd/workflows/Go/badge.svg)](https://github.com/ntrrg/usersd/actions?query=workflow:Go)
 [![codecov](https://codecov.io/gh/ntrrg/usersd/branch/master/graph/badge.svg)](https://codecov.io/gh/ntrrg/usersd)
-[![GolangCI](https://golangci.com/badges/github.com/ntrrg/usersd.svg)](https://golangci.com/r/github.com/ntrrg/usersd)
-[![GoDoc](https://godoc.org/nt.web.ve/go/usersd/pkg/usersd?status.svg)](https://godoc.org/nt.web.ve/go/usersd/pkg/usersd)
-[![BCH compliance](https://bettercodehub.com/edge/badge/ntrrg/usersd?branch=master)](https://bettercodehub.com/results/ntrrg/usersd)
+[![Go Reference](https://pkg.go.dev/badge/go.ntrrg.dev/usersd.svg)](https://pkg.go.dev/go.ntrrg.dev/usersd)
 
 **usersd** is an authentication and authorization microservice.
 
-See <https://nt.web.ve/en/projects/usersd/>
+See <https://ntrrg.dev/en/projects/usersd/>
 

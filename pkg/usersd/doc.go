@@ -4,4 +4,4 @@
 /*
 Package usersd provides easy authentication and authorization.
 */
-package usersd // import "nt.web.ve/go/usersd/pkg/usersd"
+package usersd
